@@ -1,0 +1,707 @@
+/**
+ * CSS Mobile-First - CRM Vendas
+ * Otimizado para uso em campo
+ */
+
+/* ============================================
+   TOQUES RÁPIDOS
+   ============================================ */
+
+/* Área de toque mínima */
+button, 
+a, 
+.list-item,
+.nav-item {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+}
+
+/* Removes tap highlight on mobile */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* ============================================
+   LAYOUT MOBILE
+   ============================================ */
+
+body {
+    overflow-x: hidden;
+}
+
+#app {
+    height: 100dvh;
+    height: 100vh;
+}
+
+/* ============================================
+   HEADER MOBILE
+   ============================================ */
+
+.app-header {
+    padding: 0 var(--spacing-sm);
+}
+
+.app-title {
+    font-size: var(--font-size-md);
+}
+
+.header-right .btn-icon:not(:first-child) {
+    margin-left: var(--spacing-xs);
+}
+
+/* ============================================
+   SIDEBAR MOBILE
+   ============================================ */
+
+.sidebar {
+    width: 280px;
+    box-shadow: var(--shadow-lg);
+}
+
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 199;
+}
+
+/* ============================================
+   MAIN CONTENT
+   ============================================ */
+
+.main-content {
+    padding: var(--spacing-sm);
+    padding-bottom: 100px;
+}
+
+/* ============================================
+   LISTAS MOBILE
+   ============================================ */
+
+.list-item {
+    padding: var(--spacing-md) var(--spacing-sm);
+    border-radius: var(--border-radius);
+    background: var(--bg-secondary);
+    margin-bottom: var(--spacing-xs);
+    border: 1px solid var(--border-color);
+}
+
+.list-item:active {
+    background: var(--bg-tertiary);
+    transform: scale(0.99);
+}
+
+.list-item-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--border-radius-full);
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: var(--font-size-md);
+    flex-shrink: 0;
+}
+
+.list-item-content {
+    flex: 1;
+    min-width: 0;
+    padding-right: var(--spacing-sm);
+}
+
+.list-item-title {
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.list-item-subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.list-item-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.list-item-value {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+}
+
+.list-item-date {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+}
+
+/* ============================================
+   FAB MOBILE
+   ============================================ */
+
+.fab {
+    right: var(--spacing-md);
+    bottom: var(--spacing-md);
+    width: 60px;
+    height: 60px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.fab svg {
+    width: 28px;
+    height: 28px;
+}
+
+/* ============================================
+   CARDS MOBILE
+   ============================================ */
+
+.card {
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.card-header {
+    padding-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.card-title {
+    font-size: var(--font-size-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+}
+
+/* ============================================
+   ESTATÍSTICAS MOBILE
+   ============================================ */
+
+.stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.stat-card {
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius);
+}
+
+.stat-value {
+    font-size: var(--font-size-xl);
+}
+
+.stat-label {
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ============================================
+   FORMULÁRIOS MOBILE
+   ============================================ */
+
+.form-group {
+    margin-bottom: var(--spacing-md);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    padding: 14px var(--spacing-md);
+    font-size: 16px;
+    border-radius: var(--border-radius);
+}
+
+.form-group label {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    margin-bottom: var(--spacing-xs);
+    display: block;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-sm);
+}
+
+/* ============================================
+   BOTÕES MOBILE
+   ============================================ */
+
+.btn {
+    padding: 14px var(--spacing-md);
+    font-size: var(--font-size-md);
+    border-radius: var(--border-radius);
+    min-height: 48px;
+}
+
+.btn-sm {
+    padding: 8px var(--spacing-md);
+    font-size: var(--font-size-sm);
+    min-height: 36px;
+}
+
+.btn-group {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+.btn-group .btn {
+    flex: 1;
+}
+
+/* ============================================
+   MODAIS MOBILE
+   ============================================ */
+
+.modal-container {
+    align-items: flex-end;
+    padding: 0;
+}
+
+.modal {
+    max-height: 85vh;
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+}
+
+.modal-header {
+    padding: var(--spacing-md);
+    position: sticky;
+    top: 0;
+    background: var(--bg-secondary);
+    z-index: 1;
+}
+
+.modal-title {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+}
+
+.modal-body {
+    padding: var(--spacing-md);
+}
+
+.modal-footer {
+    padding: var(--spacing-md);
+    position: sticky;
+    bottom: 0;
+    background: var(--bg-secondary);
+    flex-wrap: wrap;
+}
+
+.modal-footer .btn {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* ============================================
+   TOAST MOBILE
+   ============================================ */
+
+.toast-container {
+    bottom: 80px;
+    left: var(--spacing-md);
+    right: var(--spacing-md);
+    transform: none;
+    width: auto;
+}
+
+.toast {
+    padding: var(--spacing-md);
+    font-size: var(--font-size-sm);
+    border-radius: var(--border-radius);
+}
+
+/* ============================================
+   BUSCA MOBILE
+   ============================================ */
+
+.search-container {
+    position: relative;
+    margin-bottom: var(--spacing-md);
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px var(--spacing-md) 12px 40px;
+    font-size: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-full);
+    background: var(--bg-secondary);
+}
+
+.search-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.search-icon {
+    position: absolute;
+    left: var(--spacing-md);
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* ============================================
+   TABS MOBILE
+   ============================================ */
+
+.tabs {
+    display: flex;
+    gap: var(--spacing-xs);
+    overflow-x: auto;
+    padding-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.tab {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-tertiary);
+    border: none;
+    border-radius: var(--border-radius-full);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab.active {
+    background: var(--primary);
+    color: white;
+}
+
+.tab:active {
+    transform: scale(0.95);
+}
+
+/* ============================================
+   FILTER BAR
+   ============================================ */
+
+.filter-bar {
+    display: flex;
+    gap: var(--spacing-sm);
+    overflow-x: auto;
+    padding-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.filter-chip {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-full);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.filter-chip.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+/* ============================================
+   AÇÕES ITEM
+   ============================================ */
+
+.item-actions {
+    display: flex;
+    gap: var(--spacing-xs);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.list-item:active .item-actions,
+.list-item:focus-within .item-actions {
+    opacity: 1;
+}
+
+.item-actions button {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-tertiary);
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+}
+
+.item-actions button svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* ============================================
+   SWIPE ACTIONS
+   ============================================ */
+
+.swipe-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.swipe-actions {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    transform: translateX(100%);
+    transition: transform 0.2s;
+}
+
+.swipe-container.swiped .swipe-actions {
+    transform: translateX(0);
+}
+
+.swipe-action {
+    width: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.swipe-action.edit {
+    background: var(--info);
+    color: white;
+}
+
+.swipe-action.delete {
+    background: var(--error);
+    color: white;
+}
+
+/* ============================================
+   EMPTY STATE MOBILE
+   ============================================ */
+
+.empty-state {
+    padding: var(--spacing-xl) var(--spacing-md);
+}
+
+.empty-state svg {
+    width: 80px;
+    height: 80px;
+}
+
+.empty-state h3 {
+    font-size: var(--font-size-lg);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.empty-state p {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-md);
+}
+
+/* ============================================
+   LOADING MOBILE
+   ============================================ */
+
+.loading-screen {
+    background: var(--bg-primary);
+}
+
+.loading-screen p {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+/* ============================================
+   DETALHE DO CLIENTE/PEDIDO
+   ============================================ */
+
+.detail-header {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.detail-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--border-radius-full);
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.detail-info h2 {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.detail-info p {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.detail-section {
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid var(--border-color);
+}
+
+.detail-section-title {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.detail-value {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--text-primary);
+    text-align: right;
+}
+
+/* ============================================
+   ITENS DO PEDIDO
+   ============================================ */
+
+.order-items {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.order-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm);
+    background: var(--bg-tertiary);
+    border-radius: var(--border-radius);
+}
+
+.order-item-name {
+    font-weight: 500;
+}
+
+.order-item-details {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.order-item-total {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* ============================================
+   RESPONSIVO MAIOR
+   ============================================ */
+
+@media (min-width: 640px) {
+    .main-content {
+        padding: var(--spacing-md);
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .list-item {
+        padding: var(--spacing-md);
+    }
+    
+    .fab {
+        right: var(--spacing-lg);
+        bottom: var(--spacing-lg);
+    }
+}
+
+/* ============================================
+   LANDSCAPE MOBILE
+   ============================================ */
+
+@media (max-height: 500px) and (orientation: landscape) {
+    .fab {
+        bottom: var(--spacing-sm);
+    }
+    
+    .toast-container {
+        bottom: 60px;
+    }
+}
+
+/* ============================================
+   DARK MODE (FUTURO)
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-primary: #0f172a;
+        --bg-secondary: #1e293b;
+        --bg-tertiary: #334155;
+        --text-primary: #f1f5f9;
+        --text-secondary: #94a3b8;
+        --text-muted: #64748b;
+        --border-color: #334155;
+    }
+}

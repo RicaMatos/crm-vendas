@@ -1,0 +1,128 @@
+/**
+ * Servidor Principal - CRM Vendas
+ * @file server.js
+ * 
+ * API REST para gestão de clientes e pedidos.
+ * Utiliza Supabase como backend (Auth + Database).
+ */
+
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+
+// Importa rotas do Supabase
+const authRoutes = require('./src/routes/auth');
+const customersRoutes = require('./src/routes/customers');
+const ordersRoutes = require('./src/routes/orders');
+const productsRoutes = require('./src/routes/products');
+const cropsRoutes = require('./src/routes/crops');
+const webhooksRoutes = require('./src/routes/webhooks');
+
+const app = express();
+const PORT = process.env.PORT || process.env.VERCEL_PORT || 3000;
+
+// ============================================
+// MIDDLEWARE
+// ============================================
+
+// CORS - Permite requisições do frontend
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Parser JSON
+app.use(express.json({ limit: '10mb' }));
+
+// Parser URL encoded
+app.use(express.urlencoded({ extended: true }));
+
+// Servir arquivos estáticos do frontend
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Log de requisições
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    next();
+});
+
+// ============================================
+// ROTAS DA API
+// ============================================
+
+// Autenticação
+app.use('/api/auth', authRoutes);
+
+// CRUD de clientes
+app.use('/api/customers', customersRoutes);
+
+// CRUD de pedidos
+app.use('/api/orders', ordersRoutes);
+
+// Produtos
+app.use('/api/products', productsRoutes);
+
+// Culturas
+app.use('/api/crops', cropsRoutes);
+
+// Webhooks (n8n/WhatsApp)
+app.use('/api/webhooks', webhooksRoutes);
+
+// ============================================
+// ROTAS ESPECIAIS
+// ============================================
+
+// Health check
+app.get('/api/health', (req, res) => {
+    res.json({
+        success: true,
+        message: 'CRM Vendas API está online',
+        timestamp: new Date().toISOString(),
+        version: '2.0.0'
+    });
+});
+
+// ============================================
+// TRATAMENTO DE ERROS
+// ============================================
+
+// 404 - Rota não encontrada
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        message: 'Rota não encontrada'
+    });
+});
+
+// Erro global
+app.use((err, req, res, next) => {
+    console.error('[server] Erro não tratado:', err);
+    res.status(500).json({
+        success: false,
+        message: 'Erro interno do servidor'
+    });
+});
+
+// ============================================
+// INICIALIZAÇÃO
+// ============================================
+
+// Rota fallback para SPA (frontend) - deve ser a última
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.listen(PORT, () => {
+    console.log('========================================');
+    console.log('🚀 CRM Vendas API');
+    console.log('========================================');
+    console.log(`📡 Servidor rodando na porta ${PORT}`);
+    console.log(`🌐 Acesse: http://localhost:${PORT}`);
+    console.log(`🔗 Supabase: ${process.env.SUPABASE_URL ? 'Configurado' : 'NÃO CONFIGURADO'}`);
+    console.log('========================================');
+});
+
+module.exports = app;

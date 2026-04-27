@@ -1,0 +1,110 @@
+/* 
+   Estilos da Tela de Login 
+   Foco em estética premium e centralização (Tema Light).
+*/
+
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at top right, rgba(37, 99, 235, 0.05), transparent),
+                radial-gradient(circle at bottom left, rgba(37, 99, 235, 0.05), transparent),
+                var(--bg-main);
+    padding: 20px;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 40px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    animation: fadeIn 0.6s ease-out;
+}
+
+.login-logo {
+    margin-bottom: 30px;
+}
+
+.login-logo h1 {
+    font-size: 2rem;
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.login-logo p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+
+.login-form {
+    text-align: left;
+}
+
+.login-footer {
+    margin-top: 25px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 25px 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.separator::before, .separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.separator:not(:empty)::before { margin-right: .5em; }
+.separator:not(:empty)::after { margin-left: .5em; }
+
+.login-footer a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.login-footer a:hover {
+    text-decoration: underline;
+}
+
+.error-message {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 20px;
+    font-size: 0.85rem;
+    display: none;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.error-message.active {
+    display: block;
+    animation: shake 0.4s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
