@@ -81,23 +81,24 @@ app.use('/api/webhooks', webhooksRoutes);
 // ROTAS ESPECIAIS
 // ============================================
 
-// Health check
-app.get('/api/health', async (req, res) => {
-    // Testa conexão com Supabase
-    let supabaseStatus = 'OK';
-    try {
-        const { data, error } = await require('./src/config/supabaseClient').supabaseAnon.auth.getSession();
-        if (error) supabaseStatus = 'Erro: ' + error.message;
-    } catch (e) {
-        supabaseStatus = 'Erro: ' + e.message;
-    }
-    
+// Health check simples (sem Supabase)
+app.get('/api/health', (req, res) => {
     res.json({
         success: true,
         message: 'CRM Vendas API está online',
         timestamp: new Date().toISOString(),
-        version: '2.0.0',
-        supabase: supabaseStatus
+        version: '2.0.0'
+    });
+});
+
+// Debug - variáveis de ambiente
+app.get('/api/debug', (req, res) => {
+    res.json({
+        supabaseUrl: process.env.SUPABASE_URL ? '✅ Configurado' : '❌ Não configurado',
+        supabaseAnonKey: process.env.SUPABASE_ANON_KEY ? '✅ Configurado' : '❌ Não configurado',
+        supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ Configurado' : '❌ Não configurado',
+        jwtSecret: process.env.JWT_SECRET ? '✅ Configurado' : '❌ Não configurado',
+        nodeEnv: process.env.NODE_ENV || 'development'
     });
 });
 
@@ -119,19 +120,6 @@ app.use((err, req, res, next) => {
     res.status(500).json({
         success: false,
         message: 'Erro interno do servidor'
-    });
-});
-
-// ============================================
-// DEBUG - variáveis de ambiente
-// ============================================
-app.get('/api/debug', (req, res) => {
-    res.json({
-        supabaseUrl: process.env.SUPABASE_URL ? '✅ Configurado' : '❌ Não configurado',
-        supabaseAnonKey: process.env.SUPABASE_ANON_KEY ? '✅ Configurado' : '❌ Não configurado',
-        supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ Configurado' : '❌ Não configurado',
-        jwtSecret: process.env.JWT_SECRET ? '✅ Configurado' : '❌ Não configurado',
-        nodeEnv: process.env.NODE_ENV || 'development'
     });
 });
 
