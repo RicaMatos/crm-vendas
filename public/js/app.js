@@ -16,6 +16,10 @@
 const API_BASE = '/api';
 const API_TIMEOUT = 5000;
 
+// URLs do Supabase (do objeto global supabase)
+const SUPABASE_URL = window.supabase?.url || 'https://zgtkbnzmunxkibxybdky.supabase.co';
+const SUPABASE_ANON_KEY = window.supabase?.key || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOilzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NTYwODIsImV4cCI6MjA5MjQzMjA4Mn0.oifEbE6EflNcBdKk_AmYbHm0g5y1Q5MNfrn89UkkiDQ';
+
 async function fetchWithTimeout(url, options = {}) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
@@ -177,6 +181,11 @@ class AuthManager {
             console.log('[Auth] Dados recebidos:', data);
             
             if (!response.ok) {
+                // Se backend falhar (fetch failed), tenta API direta do Supabase
+                if (data.message?.includes('fetch failed')) {
+                    console.log('[Auth]Backend falhou, tentando API direta do Supabase...');
+                    return await this.loginDirect(email, password);
+                }
                 throw new Error(data.message || 'Erro no login');
             }
 
@@ -196,6 +205,57 @@ class AuthManager {
             console.error('[Auth] Erro no login:', error);
             ui.showToast(error.message || 'Erro de conexão', 'error');
             return false;
+        }
+    }
+
+    // Login direto via Supabase API (fallback)
+    async loginDirect(email, password) {
+        try {
+            console.log('[Auth] Login direto via Supabase:', email);
+            
+            const response = await fetchWithTimeout(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_ANON_KEY
+                },
+                body: JSON.stringify({ email, password })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error_description || 'Email ou senha incorretos');
+            }
+
+            const data = await response.json();
+            console.log('[Auth] Login direto OK:', data.access_token?.substring(0, 20) + '...');
+            
+            this.token = data.access_token;
+            supabase.setToken(data.access_token);
+            
+            // Buscar dados do usuário
+            const userResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${data.access_token}`
+                }
+            });
+            const userData = await userResponse.json();
+            
+            this.setUser({
+                id: userData.id,
+                email: userData.email,
+                nome: userData.user_metadata?.nome || ''
+            });
+            
+            ui.showScreen('main-screen');
+            app.initViews();
+            ui.showToast('Bem-vindo de volta!', 'success');
+            
+            return true;
+        } catch (error) {
+            console.error('[Auth] Erro login direto:', error);
+            throw error;
         }
     }
 
