@@ -181,6 +181,6 @@ class SupabaseClient {
     };
 }
 
-// Singleton
-export const supabase = new SupabaseClient();
-export default supabase;
+// Singleton - expõe globalmente
+window.supabase = new SupabaseClient();
+window.SupabaseClient = SupabaseClient;

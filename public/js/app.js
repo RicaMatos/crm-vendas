@@ -6,8 +6,8 @@
  * Suporta modo offline com sincronização automática.
  */
 
-import { supabase } from './supabaseClient.js';
-import { offlineManager } from './offlineManager.js';
+// Usa variáveis globais definidas em supabaseClient.js e offlineManager.js
+// (carregados antes no HTML)
 
 // ============================================
 // CONFIGURAÇÃO DA API

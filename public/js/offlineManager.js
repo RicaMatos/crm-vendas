@@ -267,6 +267,6 @@ class OfflineManager {
     }
 }
 
-// Singleton
-export const offlineManager = new OfflineManager();
-export default offlineManager;
+// Singleton - expõe globalmente
+window.offlineManager = new OfflineManager();
+window.OfflineManager = OfflineManager;
