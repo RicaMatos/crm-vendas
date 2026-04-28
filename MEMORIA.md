@@ -31,6 +31,8 @@
 | 28/04/2026 | Identificação de problema de DNS (ERR_NAME_NOT_RESOLVED) |
 | 28/04/2026 | CORREÇÃO: Domínio Supabase errado - alterado de zgtkbnzmun para zgtakbznmux |
 | 28/04/2026 | Atualização do Vercel com novo domínio |
+| 28/04/2026 | Fix: tratamento de email não confirmado no login |
+| 28/04/2026 | Aplicação de RLS e políticas no Supabase |
 
 ## Histórico de Alterações
 
@@ -41,18 +43,27 @@
 - 27/04/2026 - Adicionado fallback login direto via Supabase
 - 28/04/2026 - Health check simplificado (sem Supabase)
 - 28/04/2026 - Corrigido domínio Supabase (zgtakbznmuxkibxybdky)
+- 28/04/2026 - Fix: tratamento de email não confirmado
+- 28/04/2026 - Aplicação de RLS e políticas no Supabase
 
 ## Situação Atual do Deploy
 
 ### GitHub ✅
 - Repositório: https://github.com/RicaMatos/crm-vendas
-- ÚLTIMO COMMIT: da963b3 - Fix: dominio Supabase correto
+- ÚLTIMO COMMIT: fe8c6fe - Fix: tratamento de email não confirmado no login
 - STATUS: ✅ Online
 
 ### Vercel ✅
 - URL: https://crm-ne-xus.vercel.app
-- ÚLTIMO COMMIT: da963b3
+- ÚLTIMO COMMIT: fe8c6fe
 - STATUS: ✅ Online (deploy automático)
+
+### Supabase ✅
+- Projeto: zgtakbznmuxkibxybdky
+- URL: https://zgtakbznmuxkibxybdky.supabase.co
+- Tabelas: 6 (customers, products, crops, orders, interactions, tasks)
+- RLS: ✅ Ativo em todas as tabelas
+- Políticas: 24 (4 por tabela)
 
 ### Problema Identificado ⚠️
 - **Erro:** "net::ERR_NAME_NOT_RESOLVED" -域名 errado
@@ -74,7 +85,8 @@ Necessário configurar no Vercel Dashboard:
 - ✅ Debug (/api/debug)
 - ✅ Login via backend
 - ✅ Login direto (fallback)
-- ⚠️ Aguardando configuracao no Vercel
+- ✅ Tratamento de email não confirmado
+- ✅ RLS no Supabase (segurança)
 
 ## Deploy - Vercel (Recomendado)
 
