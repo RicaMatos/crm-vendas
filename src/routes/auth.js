@@ -126,12 +126,27 @@ router.post('/login', async (req, res) => {
                 });
             }
             
+            if (authError.message.includes('Email not confirmed')) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Confirme seu email antes de fazer login. Verifique sua caixa de mensagens.'
+                });
+            }
+            
             // Log detalhado do erro
             console.error('[auth] Tipo de erro:', authError.name);
             
             return res.status(401).json({
                 success: false,
                 message: 'Erro ao fazer login: ' + authError.message
+            });
+        }
+
+        // Verifica se o usuário existe (email não confirmado retorna user: null)
+        if (!authData.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Confirme seu email antes de fazer login.'
             });
         }
         

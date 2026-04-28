@@ -1,23 +1,25 @@
 const API_URL = '/api/auth';
 
 export const auth = {
-    async login(email, senha, rememberMe = false) {
+    async login(email, password, rememberMe = false) {
         try {
             const res = await fetch(`${API_URL}/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, senha, rememberMe })
+                body: JSON.stringify({ email, password, rememberMe })
             });
             const data = await res.json();
-            if (data.success) {
+            if (data.success && data.data) {
                 const storage = rememberMe ? localStorage : sessionStorage;
-                storage.setItem('CRM_TOKEN', data.token);
-                storage.setItem('CRM_USER', JSON.stringify(data.user));
+                storage.setItem('CRM_TOKEN', data.data.token);
+                const userWithNivel = { ...data.data.user, nivel: data.data.user.nivel || 'Vendedor' };
+                storage.setItem('CRM_USER', JSON.stringify(userWithNivel));
                 return { success: true };
             } else {
-                return { success: false, message: data.message };
+                return { success: false, message: data.message || 'Erro ao fazer login' };
             }
         } catch (e) {
+            console.error('[auth] Erro de conexão:', e);
             return { success: false, message: 'Erro de conexão com o servidor' };
         }
     },
@@ -27,7 +29,7 @@ export const auth = {
             const res = await fetch(`${API_URL}/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, email, senha })
+                body: JSON.stringify({ nome, email, password: senha })
             });
             const data = await res.json();
             return data;
