@@ -123,6 +123,19 @@ app.use((err, req, res, next) => {
 });
 
 // ============================================
+// DEBUG - variáveis de ambiente
+// ============================================
+app.get('/api/debug', (req, res) => {
+    res.json({
+        supabaseUrl: process.env.SUPABASE_URL ? '✅ Configurado' : '❌ Não configurado',
+        supabaseAnonKey: process.env.SUPABASE_ANON_KEY ? '✅ Configurado' : '❌ Não configurado',
+        supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ Configurado' : '❌ Não configurado',
+        jwtSecret: process.env.JWT_SECRET ? '✅ Configurado' : '❌ Não configurado',
+        nodeEnv: process.env.NODE_ENV || 'development'
+    });
+});
+
+// ============================================
 // INICIALIZAÇÃO
 // ============================================
 
