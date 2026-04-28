@@ -22,10 +22,41 @@
 | 25/04/2026 | Implementação da lógica de filtragem por período nos filtros dos KPI cards |
 | 25/04/2026 | Ajuste de alinhamento horizontal dos valores nos KPI cards para ficarem na mesma linha |
 | 25/04/2026 | Debug e correção dos valores de produtos no formulário de pedidos (pendente) |
+| 27/04/2026 | Configuração de deploy no GitHub e Vercel |
+| 27/04/2026 | Push inicial para GitHub (53 arquivos, 2553 linhas) |
+| 27/04/2026 | Adição do endpoint /api/debug para diagnóstico |
+| 27/04/2026 | Identificação de problema de conexão com Supabase (fetch failed) |
 
 ## Histórico de Alterações
 
 - 25/04/2026 - Criação do arquivo de memória
+- 27/04/2026 - Deploy inicial para GitHub e Vercel
+- 27/04/2026 - Adicionado endpoint de debug /api/debug
+
+## Situação Atual do Deploy
+
+### GitHub ✅
+- Repositório: https://github.com/RicaMatos/crm-vendas
+- ÚLTIMO COMMIT: 4b5583c - Add debug endpoint
+- STATUS: ✅ Online
+
+### Vercel ✅
+- URL: https://crm-ne-xus.vercel.app
+- ÚLTIMO COMMIT: 4b5583c
+- STATUS: ⚠️ Deploy em progresso
+
+### Problema Identificado ❌
+- **Erro:** "fetch failed" ao tentar login/register
+- **Causa:** O servidor Vercel não consegue conectar ao Supabase
+- **Possíveis causas:**
+  1. Variáveis de ambiente não configuradas no Vercel
+  2. Rede/VPS do Supabase bloqueada
+  3. DNS não resolve supabase.co
+
+### Próximos Passos
+1. ✅ Verificar se variáveis de ambiente estão configuradas no Vercel Dashboard
+2. ⚠️ Testar endpoint /api/debug após deploy
+3. 🔧 Se variáveis OK, verificar firewall do Supabase
 
 ## Deploy - Vercel (Recomendado)
 
