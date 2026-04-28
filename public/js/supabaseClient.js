@@ -6,8 +6,8 @@
  * Suporta modo offline com cache local.
  */
 
-const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://sbp_ba6ef2263923491b7c91765c66b9a97a65eae983.supabase.co';
-const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || '';
+const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://zgtkbnzmunxkibxybdky.supabase.co';
+const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NTYwODIsImV4cCI6MjA5MjQzMjA4Mn0.oifEbE6EflNcBdKk_AmYbHm0g5y1Q5MNfrn89UkkiDQ';
 
 class SupabaseClient {
     constructor() {

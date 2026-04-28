@@ -17,6 +17,7 @@ const customersRoutes = require('./src/routes/customers');
 const ordersRoutes = require('./src/routes/orders');
 const productsRoutes = require('./src/routes/products');
 const cropsRoutes = require('./src/routes/crops');
+const tasksRoutes = require('./src/routes/tasks');
 const webhooksRoutes = require('./src/routes/webhooks');
 
 const app = express();
@@ -41,6 +42,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Servir arquivos estáticos do frontend
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Favicon
+app.use('/favicon.ico', express.static(path.join(__dirname, 'public', 'favicon.ico')));
 
 // Log de requisições
 app.use((req, res, next) => {
@@ -67,6 +71,9 @@ app.use('/api/products', productsRoutes);
 // Culturas
 app.use('/api/crops', cropsRoutes);
 
+// Tarefas
+app.use('/api/tasks', tasksRoutes);
+
 // Webhooks (n8n/WhatsApp)
 app.use('/api/webhooks', webhooksRoutes);
 
@@ -75,12 +82,22 @@ app.use('/api/webhooks', webhooksRoutes);
 // ============================================
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+    // Testa conexão com Supabase
+    let supabaseStatus = 'OK';
+    try {
+        const { data, error } = await require('./src/config/supabaseClient').supabaseAnon.auth.getSession();
+        if (error) supabaseStatus = 'Erro: ' + error.message;
+    } catch (e) {
+        supabaseStatus = 'Erro: ' + e.message;
+    }
+    
     res.json({
         success: true,
         message: 'CRM Vendas API está online',
         timestamp: new Date().toISOString(),
-        version: '2.0.0'
+        version: '2.0.0',
+        supabase: supabaseStatus
     });
 });
 
@@ -109,9 +126,11 @@ app.use((err, req, res, next) => {
 // INICIALIZAÇÃO
 // ============================================
 
-// Rota fallback para SPA (frontend) - deve ser a última
-app.use((req, res, next) => {
-    if (req.path.startsWith('/api')) return next();
+// Rota fallback para SPA (frontend) - serve index.html para qualquer rota não-API
+app.use((req, res) => {
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({ success: false, message: 'Rota não encontrada' });
+    }
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

@@ -107,13 +107,17 @@ router.post('/login', async (req, res) => {
         }
 
         // Autentica com Supabase Auth
+        console.log('[auth] Tentando login com Supabase:', email);
+        
         const { data: authData, error: authError } = await supabaseAnon.auth.signInWithPassword({
             email,
             password
         });
 
         if (authError) {
-            console.error('[auth] Erro no login:', authError);
+            console.error('[auth] Erro no login Supabase:', authError);
+            console.error('[auth] Error message:', authError.message);
+            console.error('[auth] Error status:', authError.status);
             
             if (authError.message.includes('Invalid login') || authError.message.includes('invalid')) {
                 return res.status(401).json({
@@ -122,11 +126,16 @@ router.post('/login', async (req, res) => {
                 });
             }
             
+            // Log detalhado do erro
+            console.error('[auth] Tipo de erro:', authError.name);
+            
             return res.status(401).json({
                 success: false,
                 message: 'Erro ao fazer login: ' + authError.message
             });
         }
+        
+        console.log('[auth] Login Supabase OK, user:', authData.user);
 
         // Gera token JWT para sessão
         const token = jwt.sign(
@@ -214,7 +223,7 @@ router.get('/verify', async (req, res) => {
 
         const token = authHeader.split(' ')[1];
 
-        // Verifica token JWT
+        // Verifica apenas o token JWT local
         let decoded;
         try {
             decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -226,25 +235,15 @@ router.get('/verify', async (req, res) => {
             });
         }
 
-        // Verifica sessão no Supabase
-        const { data: { session }, error } = await supabaseAnon.auth.getSession(token);
-
-        if (error || !session) {
-            return res.status(401).json({
-                success: false,
-                valid: false,
-                message: 'Sessão expirada'
-            });
-        }
-
+        // Retorna sucesso apenas com verificação JWT
         res.json({
             success: true,
             valid: true,
             data: {
                 user: {
-                    id: session.user.id,
-                    email: session.user.email,
-                    nome: session.user.user_metadata?.nome || ''
+                    id: decoded.sub,
+                    email: decoded.email,
+                    nome: decoded.nome || ''
                 }
             }
         });

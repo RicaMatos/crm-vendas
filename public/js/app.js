@@ -46,9 +46,15 @@ class UIManager {
     }
 
     showScreen(screenId) {
+        console.log('[UI] showScreen:', screenId);
         this.screens.forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.classList.toggle('hidden', id !== screenId);
+            if (el) {
+                const shouldShow = id === screenId;
+                el.classList.toggle('hidden', !shouldShow);
+                el.style.display = shouldShow ? 'flex' : 'none';
+                console.log('[UI] Tela', id, 'display:', el.style.display);
+            }
         });
     }
 
@@ -92,7 +98,11 @@ class UIManager {
     }
 
     hideLoading() {
-        document.getElementById('loading-screen').classList.add('hidden');
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+            loadingScreen.classList.add('hidden');
+            loadingScreen.style.display = 'none';
+        }
     }
 
     setLoadingStatus(message) {
@@ -153,28 +163,37 @@ class AuthManager {
 
     async login(email, password) {
         try {
+            console.log('[Auth] Tentando login com:', email);
+            
             const response = await fetchWithTimeout(`${API_BASE}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
 
+            console.log('[Auth] Resposta do servidor:', response.status);
+            
             const data = await response.json();
+            console.log('[Auth] Dados recebidos:', data);
             
             if (!response.ok) {
                 throw new Error(data.message || 'Erro no login');
             }
 
+            console.log('[Auth] Login OK, token:', data.data.token?.substring(0, 20) + '...');
+            
             this.setUser(data.data.user);
             this.token = data.data.token;
             supabase.setToken(data.data.token);
             
+            console.log('[Auth] Navegando para main-screen');
             ui.showScreen('main-screen');
             app.initViews();
             ui.showToast('Bem-vindo de volta!', 'success');
             
             return true;
         } catch (error) {
+            console.error('[Auth] Erro no login:', error);
             ui.showToast(error.message || 'Erro de conexão', 'error');
             return false;
         }
@@ -312,16 +331,41 @@ class App {
     async init() {
         console.log('[App] Inicializando CRM Vendas...');
         
-        ui.showLoading('Verificando conexão...');
-        
-        ui.setLoadingStatus('');
-        
-        await auth.init();
-        
-        ui.hideLoading();
-        
-        this.setupEventListeners();
-        this.setupOfflineManager();
+        try {
+            ui.showLoading('Iniciando sistema...');
+            ui.setLoadingStatus('');
+            
+            // Pequeno atraso para garantir que o DOM esteja pronto
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const hasToken = localStorage.getItem('CRM_TOKEN');
+            console.log('[App] Token encontrado:', !!hasToken);
+            
+            // Forçar hide do loading antes de qualquer coisa
+            ui.hideLoading();
+            
+            if (!hasToken) {
+                console.log('[App] Sem token, mostrando tela de login');
+                ui.showScreen('auth-screen');
+                this.setupEventListeners();
+                this.setupOfflineManager();
+                console.log('[App] Inicialização concluída (sem token)');
+                return;
+            }
+            
+            await auth.init();
+            
+            this.setupEventListeners();
+            this.setupOfflineManager();
+            console.log('[App] Inicialização concluída (com token)');
+        } catch (error) {
+            console.error('[App] Erro na inicialização:', error);
+            ui.hideLoading();
+            ui.showScreen('auth-screen');
+            this.setupEventListeners();
+            this.setupOfflineManager();
+            console.log('[App] Inicialização concluída (com erro)');
+        }
     }
 
     setupEventListeners() {

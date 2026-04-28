@@ -54,9 +54,44 @@
 
 ### 3. Passos para deploy:
 
-1. Criar repositório no GitHub (nome: crm-vendas)
-2. Enviar código: `git init && git add . && git commit -m "CRM Vendas" && git branch -M main && git remote add origin https://github.com/SEU_USUARIO/crm-vendas.git && git push -u origin main`
-3. No Vercel: Add New → Project → Importar crm-vendas
-4. Adicionar Environment Variables acima
-5. Clicar Deploy
-6. Acessar o link informado (ex: https://crm-vendas.vercel.app)
+**Passo 1 - GitHub:**
+1. Criar repositório no GitHub (nome: crm-vendas, público ou privado)
+2. Enviar código:
+   ```bash
+   git init
+   git add .
+   git commit -m "CRM Vendas"
+   git branch -M main
+   git remote add origin https://github.com/SEU_USUARIO/crm-vendas.git
+   git push -u origin main
+   ```
+
+**Passo 2 - Vercel:**
+1. Acessar vercel.com
+2. Clicar "Add New" → "Project"
+3. Importar repositório "crm-vendas"
+4. Em "Environment Variables", adicionar:
+
+| Nome | Valor |
+|------|-------|
+| SUPABASE_URL | https://zgtkbnzmunxkibxybdky.supabase.co |
+| SUPABASE_ANON_KEY | eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NTYwODIsImV4cCI6MjA5MjQzMjA4Mn0.oifEbE6EflNcBdKk_AmYbHm0g5y1Q5MNfrn89UkkiDQ |
+| SUPABASE_SERVICE_ROLE_KEY | eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOilzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njg1NjA4MiwiZXhwIjoyMDkyNDMyMDgyfQ.rWIaVXkp8pssrrgIll_u80ezO3RFeGPz2fc514mDZCA |
+| JWT_SECRET | crm_vendas_2026_chave_jwt_producao_segura_aleatoria |
+
+5. Clicar "Deploy"
+6. Aguardar ~1 minuto
+7. Copiar o link fornecido (ex: https://crm-vendas.vercel.app)
+
+**Atualizações futuras:**
+- Após修改 no código, basta fazer git push会自动触发 deploy
+-Para alterações manuais: Vercel → Project → Settings → Environment Variables## Scripts de Deploy
+| Arquivo | Descricao | Plataforma |
+|--------|-----------|------------|
+| deploy.sh | Script bash executavel para deploy automatico | Linux/macOS/WSL |
+| DEPLOY.md | Guia completo com instrucoes visuais | Multi-plataforma |
+### Uso do Script
+\\\ash
+bash deploy.sh
+\\\
+
