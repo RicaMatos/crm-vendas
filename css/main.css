@@ -1,43 +1,43 @@
 /* 
    CRM Vendas Senior - Design System
    Autor: Desenvolvedor Sênior Antigravity
-   Estilo: Premium Light (Baseado na paleta CRM Pro)
-*/
+   Estilo: Premium Light (Tema Claro e Clean)
+ */
 
 :root {
-    /* Cores Primárias (Baseadas na Imagem) */
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
-    --secondary: #64748b;
+    /* Cores Primárias - Tema Claro */
+    --primary: #0ea5e9;
+    --primary-hover: #0284c7;
+    --secondary: #94a3b8;
     
     /* Backgrounds e Superfícies */
-    --bg-main: #f8fafc;
+    --bg-main: #fafbfc;
     --bg-card: #ffffff;
-    --bg-sidebar: #0f172a;
+    --bg-sidebar: #ffffff;
     --bg-input: #ffffff;
     
     /* Textos */
-    --text-primary: #1e293b;
-    --text-secondary: #64748b;
-    --text-muted: #94a3b8;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
     
     /* Status */
-    --success: #10b981;
+    --success: #22c55e;
     --warning: #f59e0b;
     --danger: #ef4444;
-    --info: #3b82f6;
+    --info: #0ea5e9;
     
     /* Gradientes */
-    --grad-primary: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+    --grad-primary: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
     
     /* Espaçamentos e Bordas */
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 20px;
-    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    --border-color: #e2e8f0;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+    --border-color: #e5e7eb;
 }
 
 /* Reset Base */

@@ -308,8 +308,8 @@
 .customer-avatar {
     width: 48px;
     height: 48px;
-    background: #eff6ff;
-    color: #2563eb;
+    background: #f0f9ff;
+    color: #0ea5e9;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -901,9 +901,9 @@
     transition: width 0.5s ease;
 }
 
-.state-bar.sp { background: #10b981; }
+.state-bar.sp { background: #22c55e; }
 .state-bar.mg { background: #f97316; }
-.state-bar.pr { background: #3b82f6; }
+.state-bar.pr { background: #0ea5e9; }
 .state-bar.default { background: #8b5cf6; }
 
 .state-val {
