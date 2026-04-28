@@ -17,7 +17,7 @@ const API_BASE = '/api';
 const API_TIMEOUT = 5000;
 
 // URLs do Supabase (do objeto global supabase)
-const SUPABASE_URL = window.supabase?.url || 'https://zgtkbnzmunxkibxybdky.supabase.co';
+const SUPABASE_URL = window.supabase?.url || 'https://zgtakbznmuxkibxybdky.supabase.co';
 const SUPABASE_ANON_KEY = window.supabase?.key || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOilzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NTYwODIsImV4cCI6MjA5MjQzMjA4Mn0.oifEbE6EflNcBdKk_AmYbHm0g5y1Q5MNfrn89UkkiDQ';
 
 async function fetchWithTimeout(url, options = {}) {
