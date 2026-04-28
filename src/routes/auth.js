@@ -122,7 +122,7 @@ router.post('/login', async (req, res) => {
             if (authError.message.includes('Invalid login') || authError.message.includes('invalid')) {
                 return res.status(401).json({
                     success: false,
-                    message: 'Email ou senha incorretos'
+                    message: 'Usuário não cadastrado ou senha incorreta. Verifique os dados ou crie uma conta.'
                 });
             }
             
