@@ -26,37 +26,54 @@
 | 27/04/2026 | Push inicial para GitHub (53 arquivos, 2553 linhas) |
 | 27/04/2026 | Adição do endpoint /api/debug para diagnóstico |
 | 27/04/2026 | Identificação de problema de conexão com Supabase (fetch failed) |
+| 27/04/2026 | Correção do erro "require is not defined" - convertendo ES6 modules para globals |
+| 27/04/2026 | Adição de login direto via Supabase API quando backend falha |
+| 28/04/2026 | Identificação de problema de DNS (ERR_NAME_NOT_RESOLVED) |
 
 ## Histórico de Alterações
 
 - 25/04/2026 - Criação do arquivo de memória
 - 27/04/2026 - Deploy inicial para GitHub e Vercel
 - 27/04/2026 - Adicionado endpoint de debug /api/debug
+- 27/04/2026 - Corrigido erro require (ES6 modules → globals)
+- 27/04/2026 - Adicionado fallback login direto via Supabase
+- 28/04/2026 - Health check simplificado (sem Supabase)
 
 ## Situação Atual do Deploy
 
 ### GitHub ✅
 - Repositório: https://github.com/RicaMatos/crm-vendas
-- ÚLTIMO COMMIT: 4b5583c - Add debug endpoint
+- ÚLTIMO COMMIT: 831252e - Fix: login direto via Supabase API
 - STATUS: ✅ Online
 
 ### Vercel ✅
 - URL: https://crm-ne-xus.vercel.app
-- ÚLTIMO COMMIT: 4b5583c
-- STATUS: ⚠️ Deploy em progresso
+- ÚLTIMO COMMIT: 831252e
+- STATUS: ✅ Online (deploy automático)
 
 ### Problema Identificado ❌
-- **Erro:** "fetch failed" ao tentar login/register
-- **Causa:** O servidor Vercel não consegue conectar ao Supabase
-- **Possíveis causas:**
-  1. Variáveis de ambiente não configuradas no Vercel
-  2. Rede/VPS do Supabase bloqueada
-  3. DNS não resolve supabase.co
+- **Erro:** "net::ERR_NAME_NOT_RESOLVED" - DNS não resolve supabase.co
+- **Causa:** Rede local não consegue resolver o domínio do Supabase
+- **Solução:** Usar outra rede (dados móveis) ou corrigir DNS local
+
+### Variáveis de Ambiente (Vercel) ✅
+| Variável | Status |
+|---------|--------|
+| SUPABASE_URL | ❌ Não configurado |
+| SUPABASE_ANON_KEY | ✅ Configurado |
+| SUPABASE_SERVICE_ROLE_KEY | ✅ Configurado |
+| JWT_SECRET | ✅ Configurado |
+
+### Funcionalidades
+- ✅ Health check (/api/health)
+- ✅ Debug (/api/debug)
+- ✅ Login via backend
+- ✅ Login direto (fallback)
+- ⚠️ Login direto falha por problema de DNS local
 
 ### Próximos Passos
-1. ✅ Verificar se variáveis de ambiente estão configuradas no Vercel Dashboard
-2. ⚠️ Testar endpoint /api/debug após deploy
-3. 🔧 Se variáveis OK, verificar firewall do Supabase
+1. 🔧 Corrigir DNS da rede local
+2. Alternativa: usar dados móveis/hotspot
 
 ## Deploy - Vercel (Recomendado)
 
@@ -69,19 +86,22 @@
     { "src": "server.js", "use": "@vercel/node" }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "/server.js" }
+    { "src": "/api/(.*)", "dest": "/server.js" },
+    { "src": "/(.*)", "dest": "/server.js" }
   ]
 }
 ```
 
-### 2. Variáveis de Ambiente (adicionar no Vercel):
+### 2. Variáveis de Ambiente (OBRIGATÓRIAS - adicionar no Vercel):
 
 | Variável | Valor |
 |---------|-------|
 | SUPABASE_URL | https://zgtkbnzmunxkibxybdky.supabase.co |
-| SUPABASE_ANON_KEY | eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NTYwODIsImV4cCI6MjA5MjQzMjA4Mn0.oifEbE6EflNcBdKk_AmYbHm0g5y1Q5MNfrn89UkkiDQ |
+| SUPABASE_ANON_KEY | eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOilzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NTYwODIsImV4cCI6MjA5MjQzMjA4Mn0.oifEbE6EflNcBdKk_AmYbHm0g5y1Q5MNfrn89UkkiDQ |
 | SUPABASE_SERVICE_ROLE_KEY | eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOilzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njg1NjA4MiwiZXhwIjoyMDkyNDMyMDgyfQ.rWIaVXkp8pssrrgIll_u80ezO3RFeGPz2fc514mDZCA |
 | JWT_SECRET | crm_vendas_2026_chave_jwt_producao_segura_aleatoria |
+
+⚠️ IMPORTANTE: Sem SUPABASE_URL configurado, a API retorna "fetch failed"
 
 ### 3. Passos para deploy:
 
