@@ -14,9 +14,8 @@ export const api = {
         const res = await fetch(`${API_URL}/${collection}`, { headers: getHeaders() });
         if (!res.ok) {
             if (res.status === 401 || res.status === 403) {
-                sessionStorage.removeItem('CRM_TOKEN');
-                localStorage.removeItem('CRM_TOKEN');
-                window.location.reload();
+                const errorData = await res.json().catch(() => ({}));
+                window.ui?.showToast(errorData.message || 'Sessão expirada. Faça login novamente.', 'error');
             }
             throw new Error(`Erro ao buscar ${collection}`);
         }

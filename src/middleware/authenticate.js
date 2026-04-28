@@ -2,12 +2,11 @@
  * Middleware de Autenticação
  * @module middleware/authenticate
  * 
- * Verifica se o usuário está autenticado através do token JWT
- * e valida a sessão com o Supabase Auth.
+ * Verifica se o usuário está autenticado através do token JWT apenas.
+ * Não faz chamada externa ao Supabase para evitar falhas.
  */
 
 const jwt = require('jsonwebtoken');
-const { supabase } = require('../config/supabaseClient');
 
 /**
  * Extrai o token JWT do header Authorization
@@ -26,70 +25,54 @@ function extractToken(req) {
 
 /**
  * Middleware principal de autenticação
- * Verifica o token JWT e valida a sessão no Supabase
+ * Verifica apenas o token JWT (sem chamadas externas)
  */
-async function authenticate(req, res, next) {
-    try {
-        const token = extractToken(req);
-        
-        if (!token) {
-            return res.status(401).json({
-                success: false,
-                message: 'Token de autenticação não fornecido'
-            });
-        }
-
-        // Decodifica o token JWT para obter o user_id
-        let decoded;
-        try {
-            decoded = jwt.verify(token, process.env.JWT_SECRET);
-        } catch (err) {
-            return res.status(401).json({
-                success: false,
-                message: 'Token inválido ou expirado'
-            });
-        }
-
-        const userId = decoded.sub || decoded.user_id;
-        
-        if (!userId) {
-            return res.status(401).json({
-                success: false,
-                message: 'Token não contém ID do usuário'
-            });
-        }
-
-        // Valida a sessão no Supabase Auth (opcional - falha segura)
-        let sessionValid = true;
-        try {
-            const { data: { session } } = await supabase.auth.getSession(token);
-            if (!session) sessionValid = false;
-        } catch (e) {
-            // Se falhar, mantém válido pois o JWT é confiável
-            console.warn('[authenticate]getSession falhou, usando apenas JWT');
-        }
-
-        // Adiciona informações do usuário à requisição
-        req.user = {
-            id: userId,
-            token: token
-        };
-
-        next();
-    } catch (error) {
-        console.error('[authenticate] Erro na autenticação:', error);
-        return res.status(500).json({
+function authenticate(req, res, next) {
+    const token = extractToken(req);
+    
+    if (!token) {
+        return res.status(401).json({
             success: false,
-            message: 'Erro interno na autenticação'
+            message: 'Token de autenticação não fornecido'
         });
     }
+
+    // Decodifica o token JWT para obter o user_id
+    let decoded;
+    try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+        return res.status(401).json({
+            success: false,
+            message: 'Token inválido ou expirado. Faça login novamente.'
+        });
+    }
+
+    const userId = decoded.sub || decoded.user_id;
+    const email = decoded.email;
+    
+    if (!userId) {
+        return res.status(401).json({
+            success: false,
+            message: 'Token inválido. Faça login novamente.'
+        });
+    }
+
+    // Adiciona informações do usuário à requisição
+    req.user = {
+        id: userId,
+        email: email,
+        token: token
+    };
+
+    next();
 }
 
 /**
  * Middleware opcional - continua mesmo sem autenticação
- * Useful para rotas públicas
+ * Útil para rotas públicas
  */
-async function optionalAuth(req, res, next) {
+function optionalAuth(req, res, next) {
     const token = extractToken(req);
     
     if (!token) {
@@ -102,14 +85,13 @@ async function optionalAuth(req, res, next) {
         const userId = decoded.sub || decoded.user_id;
         
         if (userId) {
-            const { data: { session } } = await supabase.auth.getSession(token);
-            if (session) {
-                req.user = {
-                    id: userId,
-                    email: session.user.email,
-                    token: token
-                };
-            }
+            req.user = {
+                id: userId,
+                email: decoded.email,
+                token: token
+            };
+        } else {
+            req.user = null;
         }
     } catch (err) {
         // Token inválido, mas continuamos sem autenticação
