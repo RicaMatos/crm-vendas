@@ -15,14 +15,7 @@ async function listarClientes(userId) {
     try {
         const { data, error } = await supabase
             .from('customers')
-            .select(`
-                *,
-                crops (
-                    id,
-                    nome,
-                    cor
-                )
-            `)
+            .select('*')
             .eq('user_id', userId)
             .order('created_at', { ascending: false });
 

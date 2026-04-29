@@ -315,6 +315,7 @@ class AuthManager {
 
 class DataStore {
     constructor() {
+        this.token = localStorage.getItem('CRM_TOKEN');
         this.data = {
             customers: [],
             orders: [],
@@ -325,7 +326,8 @@ class DataStore {
     }
 
     async fetchAll() {
-        const token = this.token;
+        const token = localStorage.getItem('CRM_TOKEN') || this.token;
+        
         const headers = { 
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

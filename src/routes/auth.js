@@ -161,7 +161,6 @@ router.post('/login', async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        // Obtém dados adicionais do usuário
         const nome = authData.user.user_metadata?.nome || '';
 
         res.json({

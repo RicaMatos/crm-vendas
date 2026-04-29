@@ -22,12 +22,17 @@ router.get('/', async (req, res) => {
     try {
         const { busca, status } = req.query;
         
+        console.log('[customers] userId da requisição:', req.user.id);
+        
         let clientes;
         if (busca) {
             clientes = await customerService.buscarClientes(req.user.id, busca);
         } else {
             clientes = await customerService.listarClientes(req.user.id);
         }
+        
+        console.log('[customers] Clientes encontrados:', clientes?.length);
+        console.log('[customers] Primeiros clientes:', clientes?.slice(0, 2));
 
         // Filtra por status se fornecido
         if (status) {
@@ -42,7 +47,7 @@ router.get('/', async (req, res) => {
         console.error('[customers] Erro ao listar:', error);
         res.status(500).json({
             success: false,
-            message: 'Erro ao listar clientes'
+            message: 'Erro ao listar clientes: ' + error.message
         });
     }
 });

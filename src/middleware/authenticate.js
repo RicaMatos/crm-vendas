@@ -10,6 +10,7 @@ const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'crm_vendas_2026_chave_jwt_producao_segura_aleatoria';
 
+// Extrai o token JWT do header Authorization
 /**
  * Extrai o token JWT do header Authorization
  * @param {Object} req - Objeto de requisição do Express
@@ -52,7 +53,7 @@ function authenticate(req, res, next) {
 
     const userId = decoded.sub || decoded.user_id;
     const email = decoded.email;
-    
+
     if (!userId) {
         return res.status(401).json({
             success: false,
@@ -60,7 +61,6 @@ function authenticate(req, res, next) {
         });
     }
 
-    // Adiciona informações do usuário à requisição
     req.user = {
         id: userId,
         email: email,
