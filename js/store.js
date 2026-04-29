@@ -30,6 +30,7 @@ class Store {
 
     async fetchAll() {
         try {
+            console.log('[store] Iniciando fetchAll...');
             const [customersRes, productsRes, ordersRes, cropsRes, interactionsRes, tasksRes] = await Promise.all([
                 api.get('customers'),
                 api.get('products'),
@@ -39,8 +40,19 @@ class Store {
                 api.get('tasks')
             ]);
             
+            console.log('[store] Resultados da API:', {
+                customers: customersRes?.success,
+                products: productsRes?.success,
+                orders: ordersRes?.success,
+                crops: cropsRes?.success,
+                interactions: interactionsRes?.success,
+                tasks: tasksRes?.success
+            });
+            
             // Extrai array de resposta API { success, data }
             const extractData = (res) => res?.data || res || [];
+            
+            console.log('[store] Clientes extraídos:', extractData(customersRes).length);
             
             this.state = {
                 ...this.state,
@@ -53,7 +65,7 @@ class Store {
             };
             this.notify();
         } catch (error) {
-            console.error("Erro ao carregar dados do store:", error);
+            console.error("[store] Erro ao carregar dados do store:", error);
         }
     }
 

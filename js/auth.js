@@ -3,15 +3,20 @@ const API_URL = '/api/auth';
 export const auth = {
     async login(email, password, rememberMe = false) {
         try {
+            console.log('[auth] Tentando login:', email, 'rememberMe:', rememberMe);
             const res = await fetch(`${API_URL}/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password, rememberMe })
             });
             const data = await res.json();
+            console.log('[auth] Resposta complete do servidor:', JSON.stringify(data));
+            
             if (data.success && data.data) {
                 const storage = rememberMe ? localStorage : sessionStorage;
                 storage.setItem('CRM_TOKEN', data.data.token);
+                console.log('[auth] Token salvo:', data.data.token?.substring(0, 20) ?? 'NULL');
+                console.log('[auth] Verificando storage:', storage.getItem('CRM_TOKEN')?.substring(0, 20) ?? 'NULL');
                 const userWithNivel = { ...data.data.user, nivel: data.data.user.nivel || 'Vendedor' };
                 storage.setItem('CRM_USER', JSON.stringify(userWithNivel));
                 return { success: true };
