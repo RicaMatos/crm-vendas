@@ -10,7 +10,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { supabase, supabaseAnon } = require('../config/supabaseClient');
 
-const JWT_SECRET = JWT_SECRET || 'crm_vendas_2026_chave_jwt_producao_segura_aleatoria';
+const JWT_SECRET = process.env.JWT_SECRET || 'crm_vendas_2026_chave_jwt_producao_segura_aleatoria';
 
 /**
  * Registra um novo usuário
