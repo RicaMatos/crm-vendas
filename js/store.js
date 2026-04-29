@@ -30,7 +30,7 @@ class Store {
 
     async fetchAll() {
         try {
-            const [customers, products, orders, crops, interactions, tasks] = await Promise.all([
+            const [customersRes, productsRes, ordersRes, cropsRes, interactionsRes, tasksRes] = await Promise.all([
                 api.get('customers'),
                 api.get('products'),
                 api.get('orders'),
@@ -39,9 +39,17 @@ class Store {
                 api.get('tasks')
             ]);
             
+            // Extrai array de resposta API { success, data }
+            const extractData = (res) => res?.data || res || [];
+            
             this.state = {
                 ...this.state,
-                customers, products, orders, crops, interactions, tasks
+                customers: extractData(customersRes),
+                products: extractData(productsRes),
+                orders: extractData(ordersRes),
+                crops: extractData(cropsRes),
+                interactions: extractData(interactionsRes),
+                tasks: extractData(tasksRes)
             };
             this.notify();
         } catch (error) {
@@ -51,8 +59,11 @@ class Store {
 
     async add(collection, data) {
         try {
-            const novo = await api.create(collection, data);
-            this.state[collection].push(novo);
+            const res = await api.create(collection, data);
+            const novo = res?.data || res;
+            const list = this.state[collection] || [];
+            list.push(novo);
+            this.state[collection] = list;
             this.notify();
             window.ui?.showToast(`${collection} adicionado com sucesso!`, 'success');
             return novo;
@@ -66,9 +77,11 @@ class Store {
     async update(collection, id, data) {
         try {
             await api.update(collection, id, data);
-            const index = this.state[collection].findIndex(item => item.id === id);
+            const list = this.state[collection] || [];
+            const index = list.findIndex(item => item.id === id);
             if (index !== -1) {
-                this.state[collection][index] = { ...this.state[collection][index], ...data };
+                list[index] = { ...list[index], ...data };
+                this.state[collection] = list;
                 this.notify();
             }
             window.ui?.showToast(`${collection} atualizado com sucesso!`, 'success');

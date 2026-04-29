@@ -35,7 +35,16 @@ class UIService {
         `;
         document.body.appendChild(overlay);
         
-        overlay.querySelector('#modal-close').addEventListener('click', () => this.hideModal());
+        const closeBtn = overlay.querySelector('#modal-close');
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.hideModal();
+        });
+        
+        const modalContent = overlay.querySelector('.modal-content');
+        modalContent.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
         
         return overlay;
     }
