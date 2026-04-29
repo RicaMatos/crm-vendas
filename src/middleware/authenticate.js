@@ -8,6 +8,8 @@
 
 const jwt = require('jsonwebtoken');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'crm_vendas_2026_chave_jwt_producao_segura_aleatoria';
+
 /**
  * Extrai o token JWT do header Authorization
  * @param {Object} req - Objeto de requisição do Express
@@ -40,7 +42,7 @@ function authenticate(req, res, next) {
     // Decodifica o token JWT para obter o user_id
     let decoded;
     try {
-        decoded = jwt.verify(token, process.env.JWT_SECRET);
+        decoded = jwt.verify(token, JWT_SECRET);
     } catch (err) {
         return res.status(401).json({
             success: false,
@@ -81,7 +83,7 @@ function optionalAuth(req, res, next) {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, JWT_SECRET);
         const userId = decoded.sub || decoded.user_id;
         
         if (userId) {

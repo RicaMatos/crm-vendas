@@ -10,6 +10,8 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { supabase, supabaseAnon } = require('../config/supabaseClient');
 
+const JWT_SECRET = JWT_SECRET || 'crm_vendas_2026_chave_jwt_producao_segura_aleatoria';
+
 /**
  * Registra um novo usuário
  * POST /api/auth/register
@@ -65,7 +67,7 @@ router.post('/register', async (req, res) => {
         // Gera token JWT para sessão
         const token = jwt.sign(
             { sub: authData.user.id, email: authData.user.email },
-            process.env.JWT_SECRET,
+            JWT_SECRET,
             { expiresIn: '7d' }
         );
 
@@ -155,7 +157,7 @@ router.post('/login', async (req, res) => {
         // Gera token JWT para sessão
         const token = jwt.sign(
             { sub: authData.user.id, email: authData.user.email },
-            process.env.JWT_SECRET,
+            JWT_SECRET,
             { expiresIn: '7d' }
         );
 
@@ -241,7 +243,7 @@ router.get('/verify', async (req, res) => {
         // Verifica apenas o token JWT local
         let decoded;
         try {
-            decoded = jwt.verify(token, process.env.JWT_SECRET);
+            decoded = jwt.verify(token, JWT_SECRET);
         } catch (err) {
             return res.status(401).json({
                 success: false,
