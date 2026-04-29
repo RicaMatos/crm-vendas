@@ -98,17 +98,19 @@ async function criarCliente(userId, clienteData) {
                 documento: clienteData.documento || null,
                 whatsapp: clienteData.whatsapp || null,
                 email: clienteData.email || null,
-                uf: clienteData.uf || null,
-                cidade: clienteData.cidade || null,
-                localizacao: clienteData.localizacao || null,
-                status: clienteData.status || 'Lead',
-                crop_id: clienteData.cropId || clienteData.crop_id || null,
-                data_aniversario: clienteData.dataAniversario || clienteData.data_aniversario || null,
-                lembrete_aniversario: Boolean(clienteData.lembreteAniversario),
-                endereco: clienteData.endereco || null,
-                cep: clienteData.cep || null,
-                complemento: clienteData.complemento || null,
-                created_at: new Date().toISOString()
+                logradouro: clienteData.logradouro || null,
+                numero:clienteData.numero || null,
+                complemento:clienteData.complemento || null,
+                bairro:clienteData.bairro || null,
+                cep:clienteData.cep || null,
+                uf:clienteData.uf || null,
+                cidade:clienteData.cidade || null,
+                localizacao:clienteData.localizacao || null,
+                status:clienteData.status || 'Lead',
+                crop_id:clienteData.cropId ||clienteData.crop_id || null,
+                data_aniversario:clienteData.dataAniversario ||clienteData.data_aniversario || null,
+                lembrete_aniversario:Boolean(clienteData.lembreteAniversario),
+                created_at:new Date().toISOString()
             }])
             .select()
             .single();

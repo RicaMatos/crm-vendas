@@ -278,6 +278,7 @@ body {
 }
 
 .modal {
+    max-width: 1000px;
     max-height: 85vh;
     border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
 }

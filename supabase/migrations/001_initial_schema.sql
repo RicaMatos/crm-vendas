@@ -17,6 +17,11 @@ CREATE TABLE IF NOT EXISTS public.customers (
     documento TEXT,
     whatsapp TEXT,
     email TEXT,
+    logradouro TEXT,
+    numero TEXT,
+    complemento TEXT,
+    bairro TEXT,
+    cep TEXT,
     uf TEXT,
     cidade TEXT,
     localizacao TEXT,
@@ -24,9 +29,6 @@ CREATE TABLE IF NOT EXISTS public.customers (
     crop_id BIGINT,
     data_aniversario DATE,
     lembrete_aniversario BOOLEAN DEFAULT false,
-    endereco TEXT,
-    cep TEXT,
-    complemento TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

@@ -32,6 +32,11 @@ async function createTables() {
                     documento TEXT,
                     whatsapp TEXT,
                     email TEXT,
+                    logradouro TEXT,
+                    numero TEXT,
+                    complemento TEXT,
+                    bairro TEXT,
+                    cep TEXT,
                     uf TEXT,
                     cidade TEXT,
                     localizacao TEXT,
@@ -39,9 +44,6 @@ async function createTables() {
                     crop_id BIGINT,
                     data_aniversario DATE,
                     lembrete_aniversario BOOLEAN DEFAULT false,
-                    endereco TEXT,
-                    cep TEXT,
-                    complemento TEXT,
                     created_at TIMESTAMPTZ DEFAULT NOW(),
                     updated_at TIMESTAMPTZ DEFAULT NOW()
                 );
