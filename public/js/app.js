@@ -1093,18 +1093,82 @@ class App {
 
     renderProducts() {
         const products = store.getProducts();
+        const orders = store.getOrders();
         
+        // Calcular vendas por produto
+        const productSales = {};
+        orders.forEach(order => {
+            try {
+                const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+                if (Array.isArray(items)) {
+                    items.forEach(item => {
+                        const productId = item.produto_id || item.productId;
+                        const productName = item.produto || item.productName || 'Produto';
+                        const qty = parseFloat(item.quantidade) || 0;
+                        const price = parseFloat(item.valorUnitario || item.precoUnitario || 0);
+                        const unity = item.unidade || item.und || products.find(p => p.id === productId)?.unidade || 'un';
+                        
+                        if (!productSales[productId]) {
+                            productSales[productId] = {
+                                name: productName,
+                                quantidade: 0,
+                                valor: 0,
+                                unidade: unity
+                            };
+                        }
+                        productSales[productId].quantidade += qty;
+                        productSales[productId].valor += qty * price;
+                    });
+                }
+            } catch (e) {}
+        });
+        
+        // Ordenar por valor
+        const topProducts = Object.entries(productSales)
+            .sort((a, b) => b[1].valor - a[1].valor)
+            .slice(0, 10);
+        
+        const maxValor = topProducts.length > 0 ? topProducts[0][1].valor : 1;
+        const cores = ['#2383e2', '#4daa57', '#cb912f', '#e03e3e', '#9b51e0', '#3d7fa8', '#5aabf8', '#ff8e6e', '#6b7280', '#059669'];
+
         return `
             <div class="view active">
                 <div class="view-header">
                     <h1 class="view-title">Produtos</h1>
                 </div>
 
-                <div class="card" style="margin-bottom: var(--spacing-xl);">
-                    <div class="card-header">
-                        <h3 class="card-title">Produtos Mais Vendidos</h3>
+                <div class="card" style="margin-bottom: var(--spacing-xl); background: var(--bg-elevated); border-radius: var(--border-radius-lg); overflow: hidden;">
+                    <div class="card-header" style="padding: 20px 24px; border-bottom: 1px solid var(--border-color);">
+                        <h3 class="card-title" style="font-size: 1rem; font-weight: 600; color: var(--text-primary);">Produtos Mais Vendidos</h3>
+                        <span style="font-size: 12px; color: var(--text-muted);">Por valor em R$</span>
                     </div>
-                    <div id="product-sales-chart" style="min-height: 300px; padding: 20px;"></div>
+                    <div style="padding: 24px; min-height: 320px;">
+                        ${topProducts.length > 0 ? `
+                            <div style="display: flex; flex-direction: column; gap: 16px;">
+                                ${topProducts.map(([id, data], index) => {
+                                    const percentage = maxValor > 0 ? (data.valor / maxValor * 100) : 0;
+                                    const cor = cores[index % cores.length];
+                                    return `
+                                        <div style="display: flex; align-items: center; gap: 16px;">
+                                            <div style="width: 28px; height: 28px; border-radius: 8px; background: ${cor}20; color: ${cor}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; flex-shrink: 0;">
+                                                ${index + 1}
+                                            </div>
+                                            <div style="flex: 1; min-width: 0;">
+                                                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+                                                    <span style="font-size: 14px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">${data.name}</span>
+                                                    <span style="font-size: 14px; font-weight: 700; color: var(--success);">R$ ${data.valor.toFixed(2).replace('.', ',')}</span>
+                                                </div>
+                                                <div style="height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden;">
+                                                    <div style="height: 100%; width: ${percentage}%; background: linear-gradient(90deg, ${cor} 0%, ${cor}cc 100%); border-radius: 4px; transition: width 0.5s ease;"></div>
+                                                </div>
+                                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">${data.quantidade.toLocaleString('pt-BR')} ${data.unidade} vendido${data.quantidade !== 1 ? 's' : ''}</div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        ` : '<p class="empty-text" style="text-align: center; padding: 40px; color: var(--text-muted);">Nenhuma venda registrada ainda</p>'}
+                    </div>
                 </div>
 
                 <div class="view-header" style="margin-top: var(--spacing-xl); margin-bottom: var(--spacing-md);">
