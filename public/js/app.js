@@ -827,6 +827,7 @@ class App {
 
         const orders = store.getOrders();
         const products = store.getProducts();
+        const customers = store.getCustomers();
         
         // Calculo seguro de vendas e comissao
         let totalSales = 0;
@@ -871,8 +872,9 @@ class App {
                 totalCommission += commission;
                 
                 // Vendas por Estado
-                if (order.customers && order.customers.uf) {
-                    const uf = order.customers.uf;
+                const cust = customers.find(c => c.id == order.customer_id);
+                if (cust && cust.uf) {
+                    const uf = cust.uf;
                     if (!stateSales[uf]) {
                         stateSales[uf] = { name: uf, total: 0 };
                     }
