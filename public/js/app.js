@@ -987,7 +987,7 @@ class App {
                             <h3 class="card-title">Pedidos Recentes</h3>
                         </div>
                         ${orders.slice(0, 5).length > 0 ? `
-                            <div class="list">
+                            <div class="list" id="recent-orders-list">
                             ${orders.slice(0, 5).map(order => {
                                 let val = parseFloat(order.valor_total) || 0;
                                 try {
@@ -997,7 +997,7 @@ class App {
                                     }
                                 } catch(e) {}
                                 return `
-                                <div class="list-item">
+                                <div class="list-item" data-id="${order.id}">
                                     <div class="list-item-content">
                                         <div class="list-item-title">${order.numero_pedido || '#'+order.id} <span style="color: var(--success); font-weight: 700; margin-left: 8px;">R$ ${val.toFixed(2).replace('.', ',')}</span></div>
                                         <div class="list-item-subtitle">${order.customers?.nome || 'Cliente'}</div>
