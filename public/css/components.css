@@ -72,6 +72,15 @@ input, select, textarea {
     font-size: 1rem;
     outline: none;
     transition: all 0.2s;
+    text-transform: uppercase;
+}
+
+input[type="number"], input.numeric {
+    text-transform: none;
+}
+
+input.digits-only {
+    text-transform: none;
 }
 
 input:focus, select:focus {

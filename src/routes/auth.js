@@ -9,7 +9,6 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { supabase, supabaseAnon } = require('../config/supabaseClient');
-
 const JWT_SECRET = process.env.JWT_SECRET || 'crm_vendas_2026_chave_jwt_producao_segura_aleatoria';
 
 /**
@@ -274,10 +273,12 @@ router.get('/verify', async (req, res) => {
 });
 
 /**
- * Solicita redefinição de senha
+ * Solicita redefinição de senha - Gera token temporário
  * POST /api/auth/reset-password
  * Body: { email }
  */
+const resetTokens = new Map();
+
 router.post('/reset-password', async (req, res) => {
     try {
         const { email } = req.body;
@@ -289,24 +290,106 @@ router.post('/reset-password', async (req, res) => {
             });
         }
 
-        const { error } = await supabaseAnon.auth.resetPasswordForEmail(email, {
-            redirectTo: `${req.protocol}://${req.get('host')}/index.html`
-        });
-
-        if (error) {
-            console.error('[auth] Erro ao solicitar reset:', error);
-            return res.status(400).json({
-                success: false,
-                message: 'Erro ao solicitar redefinição de senha'
-            });
+        // Verificar se usuário existe
+        const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
+        
+        if (userError) {
+            console.error('[auth] Erro ao buscar usuários:', userError);
+            return res.status(500).json({ success: false, message: 'Erro interno' });
         }
 
-        res.json({
-            success: true,
-            message: 'Email de redefinição enviado! Verifique sua caixa de mensagens.'
+        const user = userData?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+        
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'Email não encontrado' });
+        }
+
+        // Gerar token de 6 dígitos
+        const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = Date.now() + 35000; // 35 segundos
+
+        // Armazenar token temporariamente
+        resetTokens.set(email.toLowerCase(), {
+            token: resetToken,
+            userId: user.id,
+            expiresAt
+        });
+
+        // Limpar tokens expirados
+        for (const [key, value] of resetTokens) {
+            if (value.expiresAt < Date.now()) {
+                resetTokens.delete(key);
+            }
+        }
+
+        res.json({ 
+            success: true, 
+            message: 'Token gerado. Você tem 35 segundos.',
+            resetToken: resetToken,
+            userId: user.id,
+            expiresIn: 35
         });
     } catch (error) {
         console.error('[auth] Erro em reset-password:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro interno do servidor'
+        });
+    }
+});
+
+/**
+ * Confirma redefinição de senha com token
+ * POST /api/auth/confirm-reset-password
+ * Body: { userId, token, newPassword }
+ */
+router.post('/confirm-reset-password', async (req, res) => {
+    try {
+        const { userId, token, newPassword } = req.body;
+        
+        if (!userId || !token || !newPassword) {
+            return res.status(400).json({ success: false, message: 'Dados incompletos' });
+        }
+        
+        if (newPassword.length < 6) {
+            return res.status(400).json({ success: false, message: 'Senha deve ter pelo menos 6 caracteres' });
+        }
+
+        // Buscar token válido
+        let validToken = null;
+        for (const [email, data] of resetTokens) {
+            if (data.userId === userId && data.token === token) {
+                if (data.expiresAt > Date.now()) {
+                    validToken = data;
+                }
+                break;
+            }
+        }
+
+        if (!validToken) {
+            return res.status(400).json({ success: false, message: 'Token expirado ou inválido' });
+        }
+
+        // Atualizar senha via Admin API
+        const { error } = await supabase.auth.admin.updateUserById(userId, {
+            password: newPassword
+        });
+        
+        if (error) {
+            console.error('[auth] Erro ao atualizar senha:', error);
+            return res.status(400).json({ success: false, message: 'Erro ao atualizar senha' });
+        }
+
+        // Remover token usado
+        for (const [email, data] of resetTokens) {
+            if (data.userId === userId) {
+                resetTokens.delete(email);
+            }
+        }
+        
+        res.json({ success: true, message: 'Senha atualizada com sucesso!' });
+    } catch (error) {
+        console.error('[auth] Erro em confirm-reset-password:', error);
         res.status(500).json({
             success: false,
             message: 'Erro interno do servidor'

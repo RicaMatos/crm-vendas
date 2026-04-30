@@ -133,7 +133,7 @@ class UIService {
 
                     <div class="login-footer">
                         Não tem uma conta? <a href="#" id="go-to-register">Cadastre-se agora</a><br>
-                        Esqueceu sua senha? <a href="#">Clique aqui para recuperar</a>
+                        Esqueceu sua senha? <a href="#" id="forgot-password">Clique aqui para recuperar</a>
                     </div>
                 </div>
             </div>
@@ -176,9 +176,14 @@ class UIService {
             e.preventDefault();
             this.renderRegister();
         });
+
+        document.getElementById('forgot-password')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.renderForgotPassword();
+        });
     }
 
-    renderRegister(error = '') {
+    renderForgotPassword(error = '') {
         this.app.innerHTML = `
             <div class="login-container">
                 <div class="login-card">
@@ -214,6 +219,72 @@ class UIService {
         `;
         lucide.createIcons();
         this.bindRegisterEvents();
+    }
+
+    renderForgotPassword(error = '') {
+        this.app.innerHTML = `
+            <div class="login-container">
+                <div class="login-card">
+                    <div class="login-logo">
+                        <h1>Recuperar Senha</h1>
+                        <p>Digite seu e-mail para receber o link de redefinição</p>
+                    </div>
+                    <div id="forgot-error" class="error-message ${error ? 'active' : ''}">
+                        ${error}
+                    </div>
+                    <form class="login-form" id="forgot-form">
+                        <div class="input-group">
+                            <label for="forgot-email">E-mail</label>
+                            <input type="email" id="forgot-email" placeholder="seu@email.com" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+                            <i data-lucide="mail"></i> Enviar Link de Recuperação
+                        </button>
+                    </form>
+                    <div class="login-footer">
+                        Lembrou a senha? <a href="#" id="back-to-login">Voltar para o login</a>
+                    </div>
+                </div>
+            </div>
+        `;
+        lucide.createIcons();
+        this.bindForgotPasswordEvents();
+    }
+
+    bindForgotPasswordEvents() {
+        const form = document.getElementById('forgot-form');
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('forgot-email').value;
+                const btn = form.querySelector('button[type="submit"]');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loader" style="width: 16px; height: 16px; margin: 0;"></span> Enviando...';
+                
+                try {
+                    const res = await fetch('/api/auth/reset-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        this.showToast('Link de recuperação enviado para seu e-mail!', 'success');
+                        setTimeout(() => this.renderLogin(), 3000);
+                    } else {
+                        this.renderForgotPassword(data.message);
+                    }
+                } catch (err) {
+                    this.renderForgotPassword('Erro de conexão. Tente novamente.');
+                }
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="mail"></i> Enviar Link de Recuperação';
+            });
+        }
+        document.getElementById('back-to-login')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.renderLogin();
+        });
     }
 
     bindRegisterEvents() {

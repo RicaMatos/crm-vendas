@@ -57,6 +57,9 @@
                         <span>Entrar</span>
                     </button>
                     <p class="auth-link">
+                        <a href="#" id="show-forgot-password">Esqueceu a senha?</a>
+                    </p>
+                    <p class="auth-link">
                         Não tem conta? <a href="#" id="show-register">Cadastre-se</a>
                     </p>
                 </form>
@@ -80,6 +83,43 @@
                     </button>
                     <p class="auth-link">
                         Já tem conta? <a href="#" id="show-login">Entrar</a>
+                    </p>
+                </form>
+
+                <!-- Forgot Password Form - Step 1: Email -->
+                <form id="forgot-password-form" class="auth-form hidden">
+                    <div class="form-group">
+                        <label for="forgot-email">Email</label>
+                        <input type="email" id="forgot-email" placeholder="seu@email.com" required autocomplete="email">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <span>Gerar Token</span>
+                    </button>
+                    <p class="auth-link">
+                        Lembrou a senha? <a href="#" id="back-to-login">Voltar ao login</a>
+                    </p>
+                </form>
+
+                <!-- Reset Password Form - Step 2: Token + Nova Senha -->
+                <form id="reset-password-form" class="auth-form hidden">
+                    <div class="form-group">
+                        <label for="reset-token">Token (6 dígitos)</label>
+                        <input type="text" id="reset-token" placeholder="Ex: 123456" maxlength="6" required autocomplete="one-time-code">
+                        <small id="token-timer" style="color: #e74c3c; font-size: 12px;"></small>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">Nova Senha</label>
+                        <input type="password" id="new-password" placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-password">Confirmar Senha</label>
+                        <input type="password" id="confirm-password" placeholder="Repita a senha" required minlength="6" autocomplete="new-password">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <span>Alterar Senha</span>
+                    </button>
+                    <p class="auth-link">
+                        Não recebeu o token? <a href="#" id="back-to-forgot">Voltar</a>
                     </p>
                 </form>
 

@@ -33,6 +33,15 @@
 | 28/04/2026 | Atualização do Vercel com novo domínio |
 | 28/04/2026 | Fix: tratamento de email não confirmado no login |
 | 28/04/2026 | Aplicação de RLS e políticas no Supabase |
+| 30/04/2026 | Listagem dos usuários cadastrados no sistema (3 usuários) |
+| 30/04/2026 | Implementação de "Esqueceu a senha?" na tela de login |
+| 30/04/2026 | Criação do endpoint /api/auth/reset-password |
+| 30/04/2026 | Implementação de recuperação de senha com token de 35 segundos na tela |
+| 30/04/2026 | Inputs de cadastro em caixa alta (text-transform: uppercase) |
+| 30/04/2026 | CPF/CNPJ validado e apenas números no campo |
+| 30/04/2026 | WhatsApp/Telefone apenas números |
+| 30/04/2026 | Calendário de Tarefas com navegação entre meses |
+| 30/04/2026 | Dashboard - removidos KPIs de percentual e status |
 
 ## Histórico de Alterações
 

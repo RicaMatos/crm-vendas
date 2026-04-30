@@ -16,6 +16,54 @@
 const API_BASE = '/api';
 const API_TIMEOUT = 5000;
 
+// ============================================
+// VALIDAÇÕES DE CPF/CNPJ
+// ============================================
+
+function isValidCPF(cpf) {
+    if (!cpf || cpf.length !== 11) return false;
+    if (/^(\d)\1+$/.test(cpf)) return false;
+    
+    let sum = 0;
+    for (let i = 0; i < 9; i++) {
+        sum += parseInt(cpf[i]) * (10 - i);
+    }
+    let digit1 = sum % 11;
+    digit1 = digit1 < 2 ? 0 : 11 - digit1;
+    
+    sum = 0;
+    for (let i = 0; i < 10; i++) {
+        sum += parseInt(cpf[i]) * (11 - i);
+    }
+    let digit2 = sum % 11;
+    digit2 = digit2 < 2 ? 0 : 11 - digit2;
+    
+    return digit1 === parseInt(cpf[9]) && digit2 === parseInt(cpf[10]);
+}
+
+function isValidCNPJ(cnpj) {
+    if (!cnpj || cnpj.length !== 14) return false;
+    if (/^(\d)\1+$/.test(cnpj)) return false;
+    
+    const weights = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    let sum = 0;
+    for (let i = 0; i < 12; i++) {
+        sum += parseInt(cnpj[i]) * weights[i];
+    }
+    let digit1 = sum % 11;
+    digit1 = digit1 < 2 ? 0 : 11 - digit1;
+    
+    const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    sum = 0;
+    for (let i = 0; i < 13; i++) {
+        sum += parseInt(cnpj[i]) * weights2[i];
+    }
+    let digit2 = sum % 11;
+    digit2 = digit2 < 2 ? 0 : 11 - digit2;
+    
+    return digit1 === parseInt(cnpj[12]) && digit2 === parseInt(cnpj[13]);
+}
+
 // URLs do Supabase (do objeto global supabase)
 const SUPABASE_URL = window.supabase?.url || 'https://zgtakbznmuxkibxybdky.supabase.co';
 const SUPABASE_ANON_KEY = window.supabase?.key || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOilzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NTYwODIsImV4cCI6MjA5MjQzMjA4Mn0.oifEbE6EflNcBdKk_AmYbHm0g5y1Q5MNfrn89UkkiDQ';
@@ -472,6 +520,7 @@ class App {
     setupAuthForms() {
         const loginForm = document.getElementById('login-form');
         const registerForm = document.getElementById('register-form');
+        const forgotForm = document.getElementById('forgot-password-form');
 
         // Toggle entre login e cadastro
         document.getElementById('show-register')?.addEventListener('click', (e) => {
@@ -485,6 +534,56 @@ class App {
             registerForm?.classList.add('hidden');
             loginForm?.classList.remove('hidden');
         });
+
+        // Toggle para forgot password
+        document.getElementById('show-forgot-password')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            loginForm?.classList.add('hidden');
+            forgotForm?.classList.remove('hidden');
+        });
+
+        document.getElementById('back-to-login')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            forgotForm?.classList.add('hidden');
+            loginForm?.classList.remove('hidden');
+        });
+
+        // Toggle - Step 2 (token)
+        document.getElementById('back-to-forgot')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            clearInterval(tokenTimer);
+            document.getElementById('reset-password-form')?.classList.add('hidden');
+            forgotForm?.classList.remove('hidden');
+        });
+
+        // Função para mostrar token com countdown
+        function showTokenInput(token, seconds) {
+            const tokenInput = document.getElementById('reset-token');
+            const timerEl = document.getElementById('token-timer');
+            
+            // Mostrar o token no input
+            tokenInput.value = token;
+            
+            // Contagem regressiva
+            let remaining = seconds;
+            timerEl.textContent = `Expira em ${remaining}s`;
+            
+            if (tokenTimer) clearInterval(tokenTimer);
+            
+            tokenTimer = setInterval(() => {
+                remaining--;
+                if (remaining <= 0) {
+                    clearInterval(tokenTimer);
+                    timerEl.textContent = 'EXPIRADO!';
+                    ui.showToast('Token expirado! Gere outro.', 'error');
+                    document.getElementById('reset-password-form')?.classList.add('hidden');
+                    forgotForm?.classList.remove('hidden');
+                    resetUserId = null;
+                } else {
+                    timerEl.textContent = `Expira em ${remaining}s`;
+                }
+            }, 1000);
+        }
 
         // Login
         loginForm?.addEventListener('submit', async (e) => {
@@ -501,6 +600,92 @@ class App {
             const email = document.getElementById('register-email').value;
             const password = document.getElementById('register-password').value;
             await auth.register(nome, email, password);
+        });
+
+        // Step 1: Gerar token
+        let resetUserId = null;
+        let tokenTimer = null;
+        
+        forgotForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('forgot-email').value;
+            const btn = forgotForm.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = 'Gerando...';
+            
+            try {
+                const res = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    resetUserId = data.userId;
+                    ui.showToast(`Token: ${data.resetToken} (${data.expiresIn}s)`, 'success');
+                    showTokenInput(data.resetToken, data.expiresIn);
+                    forgotForm?.classList.add('hidden');
+                    document.getElementById('reset-password-form')?.classList.remove('hidden');
+                } else {
+                    ui.showToast(data.message || 'Erro ao gerar token', 'error');
+                }
+            } catch (err) {
+                ui.showToast('Erro de conexão', 'error');
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Gerar Token';
+        });
+
+        // Step 2: Redefinir senha
+        document.getElementById('reset-password-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = document.getElementById('reset-token').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const btn = document.getElementById('reset-password-form').querySelector('button[type="submit"]');
+            
+            if (newPassword !== confirmPassword) {
+                ui.showToast('As senhas não conferem', 'error');
+                return;
+            }
+            
+            if (!resetUserId) {
+                ui.showToast('Sessão expirada. Tente novamente.', 'error');
+                forgotForm?.classList.add('hidden');
+                document.getElementById('reset-password-form')?.classList.add('hidden');
+                loginForm?.classList.remove('hidden');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = 'Alterando...';
+            
+            try {
+                const res = await fetch('/api/auth/confirm-reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: resetUserId, token, newPassword })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    ui.showToast('Senha alterada! Faça login.', 'success');
+                    resetUserId = null;
+                    clearInterval(tokenTimer);
+                    document.getElementById('reset-password-form')?.classList.add('hidden');
+                    loginForm?.classList.remove('hidden');
+                    document.getElementById('login-password').value = '';
+                } else {
+                    ui.showToast(data.message || 'Erro ao alterar senha', 'error');
+                }
+            } catch (err) {
+                ui.showToast('Erro de conexão', 'error');
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Alterar Senha';
         });
     }
 
@@ -616,33 +801,18 @@ class App {
                     <div class="stat-card orange">
                         <div class="stat-label">Clientes</div>
                         <div class="stat-value">${stats.clientes}</div>
-                        <div class="stat-change up">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 15l-6-6-6 6"/></svg>
-                            <span>12% este mês</span>
-                        </div>
                     </div>
                     <div class="stat-card blue">
                         <div class="stat-label">Pedidos</div>
                         <div class="stat-value">${stats.pedidos}</div>
-                        <div class="stat-change up">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 15l-6-6-6 6"/></svg>
-                            <span>8% este mês</span>
-                        </div>
                     </div>
                     <div class="stat-card green">
                         <div class="stat-label">Produtos</div>
                         <div class="stat-value">${stats.produtos}</div>
-                        <div class="stat-change">
-                            <span>Estoque estável</span>
-                        </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Tarefas</div>
                         <div class="stat-value">${stats.tarefas}</div>
-                        <div class="stat-change down">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>
-                            <span>5% pendentes</span>
-                        </div>
                     </div>
                 </div>
 
@@ -869,8 +1039,9 @@ class App {
     renderTasks() {
         const tasks = store.getTasks();
         const today = new Date();
-        const currentMonth = today.getMonth();
-        const currentYear = today.getFullYear();
+        const calendarDate = this.calendarMonth || today;
+        const currentMonth = calendarDate.getMonth();
+        const currentYear = calendarDate.getFullYear();
         
         const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -1060,8 +1231,8 @@ class App {
     }
 
     changeMonth(delta) {
-        this.currentMonth = this.currentMonth || new Date();
-        this.currentMonth.setMonth(this.currentMonth.getMonth() + delta);
+        this.calendarMonth = this.calendarMonth || new Date();
+        this.calendarMonth.setMonth(this.calendarMonth.getMonth() + delta);
         this.renderView('tasks');
     }
 
@@ -1106,11 +1277,11 @@ class App {
                     <div class="form-row">
                         <div class="form-group">
                             <label for="whatsapp">WhatsApp</label>
-                            <input type="tel" id="whatsapp" name="whatsapp" value="${customer?.whatsapp || ''}" placeholder="+55...">
+                            <input type="tel" id="whatsapp" name="whatsapp" value="${customer?.whatsapp || ''}" placeholder="+55...." class="digits-only">
                         </div>
                         <div class="form-group">
                             <label for="documento">CPF/CNPJ</label>
-                            <input type="text" id="documento" name="documento" value="${customer?.documento || ''}">
+                            <input type="text" id="documento" name="documento" value="${customer?.documento || ''}" class="digits-only">
                         </div>
                     </div>
                     
@@ -1138,7 +1309,7 @@ class App {
                     <div class="form-row">
                         <div class="form-group">
                             <label for="cep">CEP</label>
-                            <input type="text" id="cep" name="cep" value="${customer?.cep || ''}" placeholder="00000-000">
+                            <input type="text" id="cep" name="cep" value="${customer?.cep || ''}" placeholder="00000000" class="digits-only">
                         </div>
                         <div class="form-group">
                             <label for="bairro">Bairro</label>
@@ -1187,14 +1358,12 @@ class App {
                     </div>
                     
                     <div class="form-group">
-                        <label for="status">Origem</label>
+                        <label for="status">Status</label>
                         <select id="status" name="status">
-                            <option value="Lead" ${customer?.status === 'Lead' ? 'selected' : ''}>Lead</option>
-                            <option value="Indicação" ${customer?.status === 'Indicação' ? 'selected' : ''}>Indicação</option>
-                            <option value="Listagem" ${customer?.status === 'Listagem' ? 'selected' : ''}>Listagem</option>
-                            <option value="Contato Telefônico" ${customer?.status === 'Contato Telefônico' ? 'selected' : ''}>Contato Telefônico</option>
-                            <option value="Cliente de outro vendedor" ${customer?.status === 'Cliente de outro vendedor' ? 'selected' : ''}>Cliente de outro vendedor</option>
-                            <option value="Disparo" ${customer?.status === 'Disparo' ? 'selected' : ''}>Disparo</option>
+                            <option value="Lead" ${customer?.status === 'Lead' || !customer ? 'selected' : ''}>Lead</option>
+                            <option value="Prospect" ${customer?.status === 'Prospect' ? 'selected' : ''}>Prospect</option>
+                            <option value="Cliente" ${customer?.status === 'Cliente' ? 'selected' : ''}>Cliente</option>
+                            <option value="Inativo" ${customer?.status === 'Inativo' ? 'selected' : ''}>Inativo</option>
                         </select>
                     </div>
                     
@@ -1228,6 +1397,30 @@ class App {
         `;
         
         ui.showModal(modalContent);
+        
+        // Validação de CPF/CNPJ
+        const documentoInput = document.getElementById('documento');
+        documentoInput?.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 14);
+            const doc = e.target.value;
+            if (doc.length === 11) {
+                e.target.value = doc.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+            } else if (doc.length === 14) {
+                e.target.value = doc.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+            }
+        });
+        
+        // Validação de CEP (apenas números, 8 dígitos)
+        const cepInput = document.getElementById('cep');
+        cepInput?.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8);
+        });
+        
+        //Validação de WhatsApp (apenas números)
+        const whatsappInput = document.getElementById('whatsapp');
+        whatsappInput?.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
         
         document.getElementById('customer-form')?.addEventListener('submit', (e) => {
             this.handleCustomerSubmit(e, isEdit);
@@ -1534,6 +1727,27 @@ class App {
         const form = e.target;
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
+        
+        // Validar status
+        const validStatuses = ['Lead', 'Prospect', 'Cliente', 'Inativo'];
+        if (data.status && !validStatuses.includes(data.status)) {
+            data.status = 'Lead';
+        }
+        
+        // Validar CPF/CNPJ
+        const doc = (data.documento || '').replace(/\D/g, '');
+        if (doc.length > 0 && doc.length !== 11 && doc.length !== 14) {
+            ui.showToast('CPF deve ter 11 dígitos ou CNPJ 14 dígitos', 'error');
+            return;
+        }
+        if (!isValidCPF(doc) && doc.length === 11) {
+            ui.showToast('CPF inválido', 'error');
+            return;
+        }
+        if (!isValidCNPJ(doc) && doc.length === 14) {
+            ui.showToast('CNPJ inválido', 'error');
+            return;
+        }
         
         const endpoint = isEdit ? `customers/${data.id}` : 'customers';
         const method = isEdit ? 'PUT' : 'POST';
