@@ -825,45 +825,87 @@ class App {
             tarefas: store.getTasks().length
         };
 
-        const recentOrders = store.getOrders().slice(0, 5);
-        
-        // Calcular produtos mais vendidos
-        const products = store.getProducts();
         const orders = store.getOrders();
+        const products = store.getProducts();
+        
+        // Calculo seguro de vendas e comissao
+        let totalSales = 0;
+        let totalCommission = 0;
+        const monthlySales = [0,0,0,0,0,0,0,0,0,0,0,0];
         
         const productSales = {};
-        orders.forEach(order => {
-            try {
-                const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
-                if (Array.isArray(items)) {
-                    items.forEach(item => {
-                        const productId = parseInt(item.productId || item.produto_id || item.id || 0);
-                        const product = products.find(p => p.id === productId);
-                        const productName = product?.nome || item.nome || item.produto || item.productName || 'Produto sem nome';
-                        const qty = parseFloat(item.quantidade) || 0;
-                        const unity = product?.unidade || item.unidade || item.und || 'un';
-                        
-                        if (productId) {
-                            if (!productSales[productId]) {
-                                productSales[productId] = {
-                                    name: productName,
-                                    quantidade: 0,
-                                    unidade: unity
-                                };
-                            }
-                            productSales[productId].quantidade += qty;
-                        }
-                    });
-                }
-            } catch (e) {}
-        });
         
-        // Ordenar por quantidade
+        try {
+            orders.forEach(order => {
+                let orderValue = parseFloat(order.valor_total) || 0;
+                
+                // Calcular valor dos items se necessario
+                if (orderValue === 0 && order.items) {
+                    try {
+                        const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+                        if (Array.isArray(items)) {
+                            orderValue = items.reduce((sum, item) => {
+                                return sum + ((parseFloat(item.quantidade) || 0) * (parseFloat(item.valorUnitario) || parseFloat(item.precoUnitario) || 0));
+                            }, 0);
+                        }
+                    } catch(e) {}
+                }
+                
+                // Calcular mes
+                let month = 0;
+                let year = new Date().getFullYear();
+                try {
+                    const d = new Date(order.data);
+                    month = d.getMonth();
+                    year = d.getFullYear();
+                } catch(e) {}
+                
+                const commission = orderValue * 0.10;
+                
+                if (year === new Date().getFullYear()) {
+                    monthlySales[month] += orderValue;
+                }
+                
+                totalSales += orderValue;
+                totalCommission += commission;
+                
+                // Produtos
+                try {
+                    const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+                    if (Array.isArray(items)) {
+                        items.forEach(item => {
+                            const pid = parseInt(item.productId || item.produto_id || item.id || 0);
+                            if (pid) {
+                                const prod = products.find(p => p.id === pid);
+                                const name = prod ? prod.nome : (item.nome || item.produto || 'Produto');
+                                const qty = parseFloat(item.quantidade) || 0;
+                                const un = prod ? prod.unidade : (item.unidade || item.und || 'un');
+                                
+                                if (!productSales[pid]) {
+                                    productSales[pid] = { name: name, quantidade: 0, unidade: un };
+                                }
+                                productSales[pid].quantidade += qty;
+                            }
+                        });
+                    }
+                } catch(e) {}
+            });
+        } catch(e) {
+            console.error('Dashboard calc error:', e);
+        }
+        
+        const avgSales = totalSales / 12;
+        const avgCommission = totalCommission / 12;
+        
         const topProducts = Object.entries(productSales)
             .sort((a, b) => b[1].quantidade - a[1].quantidade)
             .slice(0, 10);
         
         const maxQty = topProducts.length > 0 ? topProducts[0][1].quantidade : 1;
+        const maxMonthly = Math.max(...monthlySales, 1);
+        
+        const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        const cores = ['#2383e2', '#4daa57', '#cb912f', '#e03e3e', '#9b51e0', '#3d7fa8', '#5aabf8', '#ff8e6e', '#6b7280', '#059669'];
 
         return `
             <div class="view active">
@@ -871,111 +913,101 @@ class App {
                     <h1 class="view-title">Dashboard</h1>
                 </div>
                 
-                <div class="stats-grid">
+                <!-- KPIs -->
+                <div class="stats-grid" style="margin-bottom: 24px;">
                     <div class="stat-card orange">
-                        <div class="stat-label">Clientes</div>
-                        <div class="stat-value">${stats.clientes}</div>
+                        <div class="stat-label">Valor Total Vendas</div>
+                        <div class="stat-value">R$ ${totalSales.toFixed(2).replace('.', ',')}</div>
                     </div>
                     <div class="stat-card blue">
-                        <div class="stat-label">Pedidos</div>
-                        <div class="stat-value">${stats.pedidos}</div>
+                        <div class="stat-label">Média Vendas/Mês</div>
+                        <div class="stat-value">R$ ${avgSales.toFixed(2).replace('.', ',')}</div>
                     </div>
                     <div class="stat-card green">
-                        <div class="stat-label">Produtos</div>
-                        <div class="stat-value">${stats.produtos}</div>
+                        <div class="stat-label">Comissão Total</div>
+                        <div class="stat-value">R$ ${totalCommission.toFixed(2).replace('.', ',')}</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Tarefas</div>
-                        <div class="stat-value">${stats.tarefas}</div>
+                        <div class="stat-label">Comissão Média</div>
+                        <div class="stat-value">R$ ${avgCommission.toFixed(2).replace('.', ',')}</div>
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px; margin-top: 24px;">
-                    <!-- Cards Laterais de Produtos -->
+                <!-- Grafico Mensal -->
+                <div class="card" style="margin-bottom: 24px; padding: 20px;">
+                    <div class="card-header" style="margin-bottom: 20px;">
+                        <h3 class="card-title">Volume de Vendas Mensais</h3>
+                    </div>
+                    <div style="height: 180px; display: flex; align-items: flex-end; gap: 6px; padding: 0 4px;">
+                        ${monthlySales.map((valor, i) => {
+                            const height = maxMonthly > 0 ? (valor / maxMonthly * 100) : 0;
+                            return `
+                                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                                    <div style="font-size: 10px; font-weight: 600; color: var(--text-primary);">${(valor/1000).toFixed(1)}k</div>
+                                    <div style="width: 100%; background: var(--bg-tertiary); border-radius: 4px 4px 0 0; height: 120px; position: relative;">
+                                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: ${cores[i]}; border-radius: 4px 4px 0 0; height: ${height}%;"></div>
+                                    </div>
+                                    <div style="font-size: 9px; color: var(--text-muted);">${meses[i]}</div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
                     <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">Produtos Vendidos</h3>
                         </div>
                         ${topProducts.length > 0 ? `
-                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
                                 ${topProducts.map(([id, data], index) => {
-                                    const percentage = maxQty > 0 ? (data.quantidade / maxQty * 100) : 0;
-                                    const colors = ['#2383e2', '#4daa57', '#cb912f', '#e03e3e', '#9b51e0', '#3d7fa8', '#5aabf8', '#ff8e6e'];
-                                    const color = colors[index % colors.length];
+                                    const perc = maxQty > 0 ? (data.quantidade / maxQty * 100) : 0;
                                     return `
-                                        <div style="display: flex; align-items: center; gap: 12px;">
-                                            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color}; flex-shrink: 0;"></div>
-                                            <div style="flex: 1;">
-                                                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
-                                                    <span style="font-weight: 500; color: var(--text-primary);">${data.name}</span>
-                                                    <span style="font-weight: 600; color: var(--text-primary);">${data.quantidade.toLocaleString('pt-BR')} ${data.unidade}</span>
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <div style="width: 6px; height: 6px; border-radius: 50%; background: ${cores[index]};"></div>
+                                            <div style="flex: 1; font-size: 12px;">
+                                                <div style="display: flex; justify-content: space-between;">
+                                                    <span>${data.name}</span>
+                                                    <span style="font-weight: 600;">${data.quantidade} ${data.unidade}</span>
                                                 </div>
-                                                <div style="height: 4px; background: var(--bg-tertiary); border-radius: 2px; overflow: hidden;">
-                                                    <div style="height: 100%; width: ${percentage}%; background: ${color}; border-radius: 2px;"></div>
+                                                <div style="height: 3px; background: var(--bg-tertiary); border-radius: 2px; margin-top: 2px;">
+                                                    <div style="height: 100%; width: ${perc}%; background: ${cores[index]}; border-radius: 2px;"></div>
                                                 </div>
                                             </div>
                                         </div>
                                     `;
                                 }).join('')}
                             </div>
-                        ` : '<p class="empty-text">Nenhuma venda registrada</p>'}
+                        ` : '<p style="color: var(--text-muted); padding: 20px; text-align: center;">Nenhuma venda</p>'}
                     </div>
                     
-                    <!-- Gráfico de Barras -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Ranking - Mais Vendidos</h3>
-                        </div>
-                        ${topProducts.length > 0 ? `
-                            <div style="height: 300px; display: flex; align-items: flex-end; gap: 12px; padding: 20px 0;">
-                                ${topProducts.map(([id, data], index) => {
-                                    const percentage = maxQty > 0 ? (data.quantidade / maxQty * 100) : 0;
-                                    const colors = ['#2383e2', '#4daa57', '#cb912f', '#e03e3e', '#9b51e0', '#3d7fa8', '#5aabf8', '#ff8e6e'];
-                                    const color = colors[index % colors.length];
-                                    return `
-                                        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                                            <div style="font-size: 12px; font-weight: 600; color: var(--text-primary);">${data.quantidade}</div>
-                                            <div style="width: 100%; background: var(--bg-tertiary); border-radius: 4px 4px 0 0; position: relative; height: ${percentage * 2.5}px; min-height: 20px;">
-                                                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: ${color}; border-radius: 4px 4px 0 0; height: 100%;"></div>
-                                            </div>
-                                            <div style="font-size: 10px; color: var(--text-muted); text-align: center; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${data.name}</div>
-                                        </div>
-                                    `;
-                                }).join('')}
-                            </div>
-                        ` : '<p class="empty-text">Nenhuma venda registrada</p>'}
-                    </div>
-                </div>
-
                     <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">Pedidos Recentes</h3>
                         </div>
-                        ${recentOrders.length > 0 ? `
-                            <div class="list" id="recent-orders-list">
-                            ${recentOrders.map(order => {
-                                let calculatedTotal = parseFloat(order.valor_total || 0);
+                        ${orders.slice(0, 5).length > 0 ? `
+                            <div class="list">
+                            ${orders.slice(0, 5).map(order => {
+                                let val = parseFloat(order.valor_total) || 0;
                                 try {
                                     const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
-                                    if (Array.isArray(items) && items.length > 0) {
-                                        calculatedTotal = items.reduce((sum, item) => sum + ((item.quantidade || 0) * (item.valorUnitario || item.precoUnitario || 0)), 0);
+                                    if (Array.isArray(items)) {
+                                        val = items.reduce((s, item) => s + ((parseFloat(item.quantidade) || 0) * (parseFloat(item.valorUnitario) || parseFloat(item.precoUnitario) || 0)), 0);
                                     }
-                                } catch (e) {}
-                                
+                                } catch(e) {}
                                 return `
-                                <div class="list-item" data-id="${order.id}">
+                                <div class="list-item">
                                     <div class="list-item-content">
-                                        <div class="list-item-title">${order.numero_pedido || 'Pedido #' + order.id} <span style="color: var(--success); font-weight: 700; margin-left: 8px;">R$ ${calculatedTotal.toFixed(2).replace('.', ',')}</span></div>
+                                        <div class="list-item-title">${order.numero_pedido || '#'+order.id} <span style="color: var(--success); font-weight: 700; margin-left: 8px;">R$ ${val.toFixed(2).replace('.', ',')}</span></div>
                                         <div class="list-item-subtitle">${order.customers?.nome || 'Cliente'}</div>
-                                    </div>
-                                    <div class="list-item-meta">
-                                        <span class="badge badge-${order.status_pagamento}">${order.status_pagamento}</span>
                                     </div>
                                 </div>
                                 `;
                             }).join('')}
-                        </div>
-                    ` : '<p class="empty-text">Nenhum pedido ainda</p>'}
+                            </div>
+                        ` : '<p style="color: var(--text-muted); padding: 20px; text-align: center;">Nenhum pedido</p>'}
+                    </div>
                 </div>
             </div>
         `;
