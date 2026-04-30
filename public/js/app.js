@@ -110,8 +110,7 @@ class UIManager {
             if (el) {
                 const shouldShow = id === screenId;
                 el.classList.toggle('hidden', !shouldShow);
-                el.style.display = shouldShow ? 'flex' : 'none';
-                console.log('[UI] Tela', id, 'display:', el.style.display);
+                console.log('[UI] Tela', id, 'visível:', shouldShow);
             }
         });
     }
@@ -1119,7 +1118,6 @@ class App {
                 <div class="view-header">
                     <div style="display:flex;align-items:center;gap:12px;">
                         <h1 class="view-title">Tarefas</h1>
-                        <button class="btn btn-primary" onclick="app.showTaskModal()" style="margin:0;">+ Nova</button>
                     </div>
                 </div>
                 <div class="tasks-layout" style="display: flex; gap: var(--spacing-xl); align-items: flex-start; flex-wrap: wrap;">

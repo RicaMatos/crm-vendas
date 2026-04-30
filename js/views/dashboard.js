@@ -27,9 +27,9 @@ export const dashboardView = {
         availableYears.sort((a,b) => b - a);
         
         container.innerHTML = `
-            <div class="animate-fade" style="padding: 8px 0;">
-                <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2 style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary);">Painel de Performance</h2>
+            <div class="animate-fade">
+                <header class="view-header">
+                    <h1 class="view-title">Dashboard</h1>
                     <div>
                         <select id="dashFilterYear" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 6px; font-size: 0.85rem;">
                             ${availableYears.map(y => `<option value="${y}">${y}</option>`).join('')}
