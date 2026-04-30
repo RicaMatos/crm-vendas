@@ -837,19 +837,22 @@ class App {
                 const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
                 if (Array.isArray(items)) {
                     items.forEach(item => {
-                        const productId = item.produto_id || item.productId;
-                        const productName = item.produto || item.productName || 'Produto';
+                        const productId = parseInt(item.productId || item.produto_id || item.id || 0);
+                        const product = products.find(p => p.id === productId);
+                        const productName = product?.nome || item.nome || item.produto || item.productName || 'Produto sem nome';
                         const qty = parseFloat(item.quantidade) || 0;
-                        const unity = item.unidade || item.und || products.find(p => p.id === productId)?.unidade || 'un';
+                        const unity = product?.unidade || item.unidade || item.und || 'un';
                         
-                        if (!productSales[productId]) {
-                            productSales[productId] = {
-                                name: productName,
-                                quantidade: 0,
-                                unidade: unity
-                            };
+                        if (productId) {
+                            if (!productSales[productId]) {
+                                productSales[productId] = {
+                                    name: productName,
+                                    quantidade: 0,
+                                    unidade: unity
+                                };
+                            }
+                            productSales[productId].quantidade += qty;
                         }
-                        productSales[productId].quantidade += qty;
                     });
                 }
             } catch (e) {}
@@ -1102,22 +1105,29 @@ class App {
                 const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
                 if (Array.isArray(items)) {
                     items.forEach(item => {
-                        const productId = item.produto_id || item.productId;
-                        const productName = item.produto || item.productName || 'Produto';
+                        // Normalizar productId para número
+                        const productId = parseInt(item.productId || item.produto_id || item.id || 0);
+                        
+                        // Buscar produto cadastrado
+                        const product = products.find(p => p.id === productId);
+                        const productName = product?.nome || item.nome || item.produto || item.productName || 'Produto sem nome';
+                        
                         const qty = parseFloat(item.quantidade) || 0;
                         const price = parseFloat(item.valorUnitario || item.precoUnitario || 0);
-                        const unity = item.unidade || item.und || products.find(p => p.id === productId)?.unidade || 'un';
+                        const unity = product?.unidade || item.unidade || item.und || 'un';
                         
-                        if (!productSales[productId]) {
-                            productSales[productId] = {
-                                name: productName,
-                                quantidade: 0,
-                                valor: 0,
-                                unidade: unity
-                            };
+                        if (productId) {
+                            if (!productSales[productId]) {
+                                productSales[productId] = {
+                                    name: productName,
+                                    quantidade: 0,
+                                    valor: 0,
+                                    unidade: unity
+                                };
+                            }
+                            productSales[productId].quantidade += qty;
+                            productSales[productId].valor += qty * price;
                         }
-                        productSales[productId].quantidade += qty;
-                        productSales[productId].valor += qty * price;
                     });
                 }
             } catch (e) {}
