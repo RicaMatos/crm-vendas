@@ -6,44 +6,20 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  deploy-frontend:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Node. js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Render CLI
+      - name: Deploy Frontend to Vercel
         run: |
-          curl -L https://github.com/render-oss/cli/releases/download/v1.1.0/cli_1.1.0_linux_amd64.tar.gz -o render.tar.gz
-          tar -xzf render.tar.gz
-          sudo mv cli_v1.1.0/render /usr/local/bin/render
-        shell: bash
+          echo "Vercel deploy triggered automatically when connected"
+          echo "Connect repo at vercel.com to enable auto-deploy"
 
-      - name: Deploy to Render
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Deploy
+        run: |
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+        continue-on-error: true
         env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          CI: true
-        run: |
-          render services create \
-            --name crm-vendas \
-            --type web_service \
-            --runtime node \
-            --region oregon \
-            --plan free \
-            --repo https://github.com/RicaMatos/crm-vendas.git \
-            --branch main \
-            --build-command "npm install" \
-            --start-command "node server. js" \
-            --auto-deploy true \
-            --env SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
-            --env SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }} \
-            --env SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
-            --output json
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
