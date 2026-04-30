@@ -834,6 +834,7 @@ class App {
         const monthlySales = [0,0,0,0,0,0,0,0,0,0,0,0];
         
         const productSales = {};
+        const stateSales = {};
         
         try {
             orders.forEach(order => {
@@ -869,6 +870,15 @@ class App {
                 totalSales += orderValue;
                 totalCommission += commission;
                 
+                // Vendas por Estado
+                if (order.customers && order.customers.uf) {
+                    const uf = order.customers.uf;
+                    if (!stateSales[uf]) {
+                        stateSales[uf] = { name: uf, total: 0 };
+                    }
+                    stateSales[uf].total += orderValue;
+                }
+                
                 // Produtos
                 try {
                     const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
@@ -900,6 +910,12 @@ class App {
         const topProducts = Object.entries(productSales)
             .sort((a, b) => b[1].quantidade - a[1].quantidade)
             .slice(0, 10);
+        
+        const topStates = Object.entries(stateSales)
+            .sort((a, b) => b[1].total - a[1].total)
+            .slice(0, 8);
+        
+        const totalStateSales = topStates.reduce((s, [k, v]) => s + v.total, 0);
         
         const maxQty = topProducts.length > 0 ? topProducts[0][1].quantidade : 1;
         const maxMonthly = Math.max(...monthlySales, 1);
@@ -933,24 +949,65 @@ class App {
                     </div>
                 </div>
 
-                <!-- Grafico Mensal -->
-                <div class="card" style="margin-bottom: 24px; padding: 20px;">
-                    <div class="card-header" style="margin-bottom: 20px;">
-                        <h3 class="card-title">Volume de Vendas Mensais</h3>
-                    </div>
-                    <div style="height: 180px; display: flex; align-items: flex-end; gap: 6px; padding: 0 4px;">
-                        ${monthlySales.map((valor, i) => {
-                            const height = maxMonthly > 0 ? (valor / maxMonthly * 100) : 0;
-                            return `
-                                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                                    <div style="font-size: 10px; font-weight: 600; color: var(--text-primary);">${(valor/1000).toFixed(1)}k</div>
-                                    <div style="width: 100%; background: var(--bg-tertiary); border-radius: 4px 4px 0 0; height: 120px; position: relative;">
-                                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: ${cores[i]}; border-radius: 4px 4px 0 0; height: ${height}%;"></div>
+                <!-- Graficos: Bar + Pizza -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                    <div class="card" style="padding: 20px;">
+                        <div class="card-header" style="margin-bottom: 20px;">
+                            <h3 class="card-title">Volume de Vendas Mensais</h3>
+                        </div>
+                        <div style="height: 180px; display: flex; align-items: flex-end; gap: 6px; padding: 0 4px;">
+                            ${monthlySales.map((valor, i) => {
+                                const height = maxMonthly > 0 ? (valor / maxMonthly * 100) : 0;
+                                return `
+                                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                                        <div style="font-size: 10px; font-weight: 600; color: var(--text-primary);">${(valor/1000).toFixed(1)}k</div>
+                                        <div style="width: 100%; background: var(--bg-tertiary); border-radius: 4px 4px 0 0; height: 120px; position: relative;">
+                                            <div style="position: absolute; bottom: 0; left: 0; right: 0; background: ${cores[i]}; border-radius: 4px 4px 0 0; height: ${height}%;"></div>
+                                        </div>
+                                        <div style="font-size: 9px; color: var(--text-muted);">${meses[i]}</div>
                                     </div>
-                                    <div style="font-size: 9px; color: var(--text-muted);">${meses[i]}</div>
+                                `;
+                            }).join('')}
+                    </div>
+                    </div>
+                    
+                    <!-- Grafico Pizza: Vendas por Estado -->
+                    <div class="card" style="padding: 20px;">
+                        <div class="card-header" style="margin-bottom: 16px;">
+                            <h3 class="card-title">Vendas por Estado</h3>
+                        </div>
+                        ${topStates.length > 0 ? `
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <div style="position: relative; width: 120px; height: 120px; flex-shrink: 0;">
+                                    <svg viewBox="0 0 42 42" style="width: 100%; height: 100%; transform: rotate(-90deg);">
+                                        ${(() => {
+                                            let cumulative = 0;
+                                            return topStates.map(([uf, data], i) => {
+                                                const pct = totalStateSales > 0 ? data.total / totalStateSales : 0;
+                                                const dash = pct * 100;
+                                                const gap = i === 0 ? 0 : 2;
+                                                const prev = cumulative;
+                                                cumulative += dash;
+                                                return `<circle cx="21" cy="21" r="15" fill="none" stroke="${cores[i]}" stroke-width="7" stroke-dasharray="${dash} ${100 - dash}" stroke-dashoffset="${-(prev)}" style="" />`;
+                                            }).join('');
+                                        })()}
+                                        <circle cx="21" cy="21" r="9" fill="var(--bg-primary)" />
+                                    </svg>
                                 </div>
-                            `;
-                        }).join('')}
+                                <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+                                    ${topStates.map(([uf, data], i) => {
+                                        const pct = totalStateSales > 0 ? (data.total / totalStateSales * 100) : 0;
+                                        return `
+                                            <div style="display: flex; align-items: center; gap: 6px; font-size: 11px;">
+                                                <div style="width: 8px; height: 8px; border-radius: 2px; background: ${cores[i]}; flex-shrink: 0;"></div>
+                                                <span style="flex: 1;">${uf}</span>
+                                                <span style="font-weight: 600; color: var(--success);">${pct.toFixed(0)}%</span>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        ` : '<p style="color: var(--text-muted); text-align: center;">Nenhuma venda</p>'}
                     </div>
                 </div>
 
