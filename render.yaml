@@ -1,0 +1,11 @@
+{
+  "name": "crm-vendas",
+  "buildCommand": "npm install",
+  "startCommand": "node server.js",
+  "env": [
+    {
+      "key": "NODE_VERSION",
+      "value": "18"
+    }
+  ]
+}
