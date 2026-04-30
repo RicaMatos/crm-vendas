@@ -8,44 +8,45 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 10px 20px;
-    border-radius: var(--radius-md);
-    font-weight: 500;
+    padding: 12px 24px;
+    border-radius: var(--border-radius-lg);
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: none;
     font-size: 0.95rem;
     font-family: inherit;
+    letter-spacing: -0.01em;
 }
 
 .btn-primary {
     background: var(--primary);
     color: white;
-    box-shadow: 0 4px 14px 0 rgba(14, 165, 233, 0.25);
+    box-shadow: 0 4px 15px rgba(93, 89, 225, 0.25);
 }
 
 .btn-primary:hover {
-    background: var(--primary-hover);
+    background: var(--primary-dark);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(14, 165, 233, 0.2);
+    box-shadow: 0 8px 20px rgba(93, 89, 225, 0.3);
 }
 
 .btn-secondary {
-    background: #f3f4f6;
+    background: var(--secondary);
     color: var(--text-primary);
-    border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
-    background: #e5e7eb;
+    background: var(--border-color);
+    transform: translateY(-2px);
 }
 
 .card {
-    background: var(--bg-card);
-    border-radius: var(--radius-lg);
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius-lg);
     padding: 24px;
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+    border: 1px solid rgba(226, 228, 237, 0.5);
 }
 
 .input-group {
@@ -79,17 +80,18 @@ input:focus, select:focus {
 }
 
 .badge {
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 0.7rem;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
-.badge-success { background: rgba(16, 185, 129, 0.1); color: var(--success); }
-.badge-warning { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
-.badge-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
-.badge-info { background: rgba(59, 130, 246, 0.1); color: var(--info); }
+.badge-success { background: rgba(74, 217, 145, 0.15); color: #059669; }
+.badge-warning { background: rgba(255, 176, 57, 0.15); color: #b45309; }
+.badge-danger { background: rgba(255, 90, 90, 0.15); color: #dc2626; }
+.badge-info { background: rgba(90, 171, 248, 0.15); color: #0284c7; }
 
 /* Animações de Entrada */
 @keyframes fadeIn {
@@ -127,8 +129,8 @@ input:focus, select:focus {
 .modal-content {
     background: var(--bg-card);
     width: 95%;
-    max-width: 1100px;
-    min-width: 500px;
+    max-width: 1400px;
+    min-width: 600px;
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-lg);

@@ -72,3 +72,14 @@ async fetchAll() {
 
 ## Resultado
 Clientes agora aparecem corretamente na tela do usuário logado após login.
+
+## Commits Git
+
+```
+a5f8754 - Fix: token não sendo enviado nas requisições de API (customers não carregavam)
+7fa489b - Clean: remover logs de debug temporários da app antiga
+```
+
+## Repositório
+- Original: https://github.com/RicaMatos/CRM_NeXus.git
+- Novo: https://github.com/RicaMatos/crm-vendas.git

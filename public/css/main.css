@@ -482,7 +482,7 @@ body {
     z-index: 200;
     overflow-y: auto;
     color: var(--text-inverse);
-    border-bottom-right-radius: 40px;
+    /* border-bottom-right-radius: 40px; Removido a pedido */
 }
 
 .sidebar.open {
@@ -1039,6 +1039,12 @@ body {
     .main-content {
         margin-left: var(--sidebar-width);
         padding: var(--spacing-lg);
+    }
+}
+
+@media (min-width: 1024px) {
+    .main-content {
+        padding: 100px var(--spacing-xl) var(--spacing-xl);
     }
     
     .menu-toggle {
