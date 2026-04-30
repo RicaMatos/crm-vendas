@@ -825,12 +825,53 @@ class App {
             tarefas: store.getTasks().length
         };
 
-        const recentOrders = store.getOrders().slice(0, 5);
+        const orders = store.getOrders();
+        const products = store.getProducts();
+        
+        // Calcular vendas mensais (Janeiro a Dezembro)
+        const monthlySales = Array(12).fill(0);
+        const monthlyCommission = Array(12).fill(0);
+        
+        let totalSales = 0;
+        let totalCommission = 0;
+        
+        orders.forEach(order => {
+            try {
+                const orderDate = new Date(order.data);
+                const month = orderDate.getMonth();
+                const year = orderDate.getFullYear();
+                
+                // Calcular valor do pedido
+                let orderValue = parseFloat(order.valor_total) || 0;
+                if (orderValue === 0 && order.items) {
+                    const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+                    if (Array.isArray(items)) {
+                        orderValue = items.reduce((sum, item) => {
+                            const qty = parseFloat(item.quantidade) || 0;
+                            const price = parseFloat(item.valorUnitario || item.precoUnitario || 0);
+                            return sum + (qty * price);
+                        }, 0);
+                    }
+                }
+                
+                // Calcular comissão (10% padrão)
+                let orderCommission = orderValue * 0.10;
+                
+                if (orderDate.getFullYear() === new Date().getFullYear()) {
+                    monthlySales[month] += orderValue;
+                    monthlyCommission[month] += orderCommission;
+                    totalSales += orderValue;
+                    totalCommission += orderCommission;
+                }
+            } catch (e) {}
+        });
+        
+        const avgSales = orders.length > 0 ? totalSales / 12 : 0;
+        const avgCommission = orders.length > 0 ? totalCommission / 12 : 0;
+        
+        const maxMonthly = Math.max(...monthlySales, 1);
         
         // Calcular produtos mais vendidos
-        const products = store.getProducts();
-        const orders = store.getOrders();
-        
         const productSales = {};
         orders.forEach(order => {
             try {
@@ -839,17 +880,12 @@ class App {
                     items.forEach(item => {
                         const productId = parseInt(item.productId || item.produto_id || item.id || 0);
                         const product = products.find(p => p.id === productId);
-                        const productName = product?.nome || item.nome || item.produto || item.productName || 'Produto sem nome';
+                        const productName = product?.nome || item.nome || item.produto || 'Produto';
                         const qty = parseFloat(item.quantidade) || 0;
-                        const unity = product?.unidade || item.unidade || item.und || 'un';
                         
                         if (productId) {
                             if (!productSales[productId]) {
-                                productSales[productId] = {
-                                    name: productName,
-                                    quantidade: 0,
-                                    unidade: unity
-                                };
+                                productSales[productId] = { name: productName, quantidade: 0 };
                             }
                             productSales[productId].quantidade += qty;
                         }
@@ -858,12 +894,14 @@ class App {
             } catch (e) {}
         });
         
-        // Ordenar por quantidade
         const topProducts = Object.entries(productSales)
             .sort((a, b) => b[1].quantidade - a[1].quantidade)
             .slice(0, 10);
         
         const maxQty = topProducts.length > 0 ? topProducts[0][1].quantidade : 1;
+        
+        const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        const cores = ['#2383e2', '#4daa57', '#cb912f', '#e03e3e', '#9b51e0', '#3d7fa8', '#5aabf8', '#ff8e6e', '#6b7280', '#059669', '#dc2626', '#7c3aed'];
 
         return `
             <div class="view active">
@@ -871,30 +909,113 @@ class App {
                     <h1 class="view-title">Dashboard</h1>
                 </div>
                 
-                <div class="stats-grid">
+                <!-- KPIs -->
+                <div class="stats-grid" style="margin-bottom: 24px;">
                     <div class="stat-card orange">
-                        <div class="stat-label">Clientes</div>
-                        <div class="stat-value">${stats.clientes}</div>
+                        <div class="stat-label">Valor Total Vendas</div>
+                        <div class="stat-value">R$ ${totalSales.toFixed(2).replace('.', ',')}</div>
                     </div>
                     <div class="stat-card blue">
-                        <div class="stat-label">Pedidos</div>
-                        <div class="stat-value">${stats.pedidos}</div>
+                        <div class="stat-label">Média Vendas/Mês</div>
+                        <div class="stat-value">R$ ${avgSales.toFixed(2).replace('.', ',')}</div>
                     </div>
                     <div class="stat-card green">
-                        <div class="stat-label">Produtos</div>
-                        <div class="stat-value">${stats.produtos}</div>
+                        <div class="stat-label">Comissão Total</div>
+                        <div class="stat-value">R$ ${totalCommission.toFixed(2).replace('.', ',')}</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Tarefas</div>
-                        <div class="stat-value">${stats.tarefas}</div>
+                        <div class="stat-label">Comissão Média</div>
+                        <div class="stat-value">R$ ${avgCommission.toFixed(2).replace('.', ',')}</div>
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px; margin-top: 24px;">
-                    <!-- Cards Laterais de Produtos -->
+                <!-- Gráfico Mensal -->
+                <div class="card" style="margin-bottom: 24px; padding: 20px;">
+                    <div class="card-header" style="margin-bottom: 20px;">
+                        <h3 class="card-title">Volume de Vendas Mensais</h3>
+                        <span style="font-size: 12px; color: var(--text-muted);">${new Date().getFullYear()}</span>
+                    </div>
+                    <div style="height: 200px; display: flex; align-items: flex-end; gap: 8px; padding: 0 8px;">
+                        ${monthlySales.map((valor, i) => {
+                            const height = maxMonthly > 0 ? (valor / maxMonthly * 100) : 0;
+                            return `
+                                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                                    <div style="font-size: 11px; font-weight: 500; color: var(--text-primary);">R$ ${(valor/1000).toFixed(1)}k</div>
+                                    <div style="width: 100%; background: var(--bg-tertiary); border-radius: 4px 4px 0 0; height: 140px; position: relative;">
+                                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(0deg, ${cores[i]} 0%, ${cores[i]}80 100%); border-radius: 4px 4px 0 0; height: ${height}%; transition: height 0.5s ease;"></div>
+                                    </div>
+                                    <div style="font-size: 10px; color: var(--text-muted);">${meses[i]}</div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
+                    <!-- Produtos Vendidos -->
                     <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">Produtos Vendidos</h3>
+                        </div>
+                        ${topProducts.length > 0 ? `
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                ${topProducts.map(([id, data], index) => {
+                                    const percentage = maxQty > 0 ? (data.quantidade / maxQty * 100) : 0;
+                                    const color = cores[index % cores.length];
+                                    return `
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color}; flex-shrink: 0;"></div>
+                                            <div style="flex: 1;">
+                                                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
+                                                    <span style="font-weight: 500; color: var(--text-primary);">${data.name}</span>
+                                                    <span style="font-weight: 600; color: var(--text-primary);">${data.quantidade}</span>
+                                                </div>
+                                                <div style="height: 4px; background: var(--bg-tertiary); border-radius: 2px; overflow: hidden;">
+                                                    <div style="height: 100%; width: ${percentage}%; background: ${color}; border-radius: 2px;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        ` : '<p class="empty-text">Nenhuma venda</p>'}
+                    </div>
+                    
+                    <!-- Pedidos Recentes -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Pedidos Recentes</h3>
+                        </div>
+                        ${orders.slice(0, 5).length > 0 ? `
+                            <div class="list">
+                            ${orders.slice(0, 5).map(order => {
+                                let calculatedTotal = parseFloat(order.valor_total || 0);
+                                try {
+                                    const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+                                    if (Array.isArray(items) && items.length > 0) {
+                                        calculatedTotal = items.reduce((sum, item) => sum + ((item.quantidade || 0) * (item.valorUnitario || item.precoUnitario || 0)), 0);
+                                    }
+                                } catch (e) {}
+                                
+                                return `
+                                <div class="list-item" data-id="${order.id}">
+                                    <div class="list-item-content">
+                                        <div class="list-item-title">${order.numero_pedido || 'Pedido #' + order.id} <span style="color: var(--success); font-weight: 700; margin-left: 8px;">R$ ${calculatedTotal.toFixed(2).replace('.', ',')}</span></div>
+                                        <div class="list-item-subtitle">${order.customers?.nome || 'Cliente'}</div>
+                                    </div>
+                                    <div class="list-item-meta">
+                                        <span class="badge badge-${order.status_pagamento}">${order.status_pagamento}</span>
+                                    </div>
+                                </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        ` : '<p class="empty-text">Nenhum pedido</p>'}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
                         </div>
                         ${topProducts.length > 0 ? `
                             <div style="display: flex; flex-direction: column; gap: 12px;">
