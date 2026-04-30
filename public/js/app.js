@@ -75,12 +75,6 @@ class UIManager {
             setTimeout(() => toast.remove(), 300);
         }, 3000);
     }
-        
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
 
     showModal(content) {
         const container = document.getElementById('modal-container');
@@ -394,42 +388,48 @@ class App {
 
     async init() {
         console.log('[App] Inicializando CRM Vendas...');
+        console.log('[App] DOM ready?', document.readyState);
+        
+        // Se DOM Ainda não carregado, espera
+        if (document.readyState !== 'complete') {
+            console.log('[App] Esperando DOM loads...');
+            await new Promise(resolve => window.addEventListener('load', resolve));
+        }
         
         try {
-            ui.showLoading('Iniciando sistema...');
-            ui.setLoadingStatus('');
-            
-            // Pequeno atraso para garantir que o DOM esteja pronto
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            const hasToken = localStorage.getItem('CRM_TOKEN');
-            console.log('[App] Token encontrado:', !!hasToken);
-            
-            // Forçar hide do loading antes de qualquer coisa
-            ui.hideLoading();
-            
-            if (!hasToken) {
-                console.log('[App] Sem token, mostrando tela de login');
-                ui.showScreen('auth-screen');
-                this.setupEventListeners();
-                this.setupOfflineManager();
-                console.log('[App] Inicialização concluída (sem token)');
-                return;
-            }
-            
-            await auth.init();
-            
-            this.setupEventListeners();
-            this.setupOfflineManager();
-            console.log('[App] Inicialização concluída (com token)');
+            await this.initCore();
         } catch (error) {
-            console.error('[App] Erro na inicialização:', error);
-            ui.hideLoading();
+            console.error('[App] Erro fatal:', error);
+        }
+    }
+
+    async initCore() {
+        console.log('[App] initCore started');
+        ui.showLoading('Iniciando sistema...');
+        ui.setLoadingStatus('');
+        
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        const hasToken = localStorage.getItem('CRM_TOKEN');
+        console.log('[App] Token exists:', !!hasToken);
+        
+        ui.hideLoading();
+        console.log('[App] Loading hidden');
+        
+        if (!hasToken) {
+            console.log('[App] Show auth screen');
             ui.showScreen('auth-screen');
             this.setupEventListeners();
             this.setupOfflineManager();
-            console.log('[App] Inicialização concluída (com erro)');
+            console.log('[App] Init done - no token');
+            return;
         }
+        
+        await auth.init();
+        
+        this.setupEventListeners();
+        this.setupOfflineManager();
+        console.log('[App] Init done - with token');
     }
 
     setupEventListeners() {
@@ -505,6 +505,7 @@ class App {
     }
 
     setupOfflineManager() {
+        console.log('[App] setupOfflineManager chamado');
         // Atualiza UI quando voltar online
         window.addEventListener('online', () => {
             ui.updateOnlineStatus();
