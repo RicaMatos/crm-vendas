@@ -63,10 +63,12 @@ class UIManager {
     }
 
     showToast(message, type = 'info') {
+        console.log('[UI] showToast:', message, type);
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         toast.textContent = message;
+        toast.style.cssText = 'position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; padding: 16px 24px; z-index: 9999; border-radius: 8px; font-weight: bold;';
         
         container.appendChild(toast);
         
@@ -199,7 +201,7 @@ class AuthManager {
             return true;
         } catch (error) {
             console.error('[Auth] Erro no login:', error);
-            ui.showToast(error.message || 'Erro de conexão', 'error');
+            (window.ui || ui)?.showToast(error.message || 'Erro de conexão', 'error');
             return false;
         }
     }

@@ -7,6 +7,7 @@
    VARIÁVEIS CSS
    ============================================ */
 :root {
+    color-scheme: light only;
     /* Cores - Tema Vibrante e Moderno (Inspirado no modelo) */
     --primary: #5d59e1;
     --primary-dark: #4b47c7;

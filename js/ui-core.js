@@ -167,7 +167,7 @@ class UIService {
                     await store.fetchAll();
                     this.renderDashboard();
                 } else {
-                    this.renderLogin(result.message);
+                    this.showToast(result.message || 'Email ou senha incorretos', 'error');
                 }
             });
         }
