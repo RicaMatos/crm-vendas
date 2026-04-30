@@ -679,7 +679,18 @@ class App {
         return `
             <div class="view active">
                 <div class="view-header">
-                    <h1 class="view-title">Clientes</h1>
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <h1 class="view-title">Clientes</h1>
+                        <select id="customer-filter-select" class="form-control" style="width: auto; margin: 0; padding: 6px 32px 6px 12px; height: auto; border-radius: 20px; font-size: 13px; cursor: pointer;">
+                            <option value="all">Todos</option>
+                            <option value="Lead">Lead</option>
+                            <option value="Indicação">Indicação</option>
+                            <option value="Listagem">Listagem</option>
+                            <option value="Contato Telefônico">Contato Telefônico</option>
+                            <option value="Cliente de outro vendedor">Cliente de outro vendedor</option>
+                            <option value="Disparo">Disparo</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <div class="search-container">
@@ -689,16 +700,6 @@ class App {
                         </svg>
                     </span>
                     <input type="text" class="search-input" id="customer-search" placeholder="Buscar clientes...">
-                </div>
-
-                <div class="filter-bar">
-                    <button class="filter-chip active" data-filter="all">Todos</button>
-                    <button class="filter-chip" data-filter="Lead">Lead</button>
-                    <button class="filter-chip" data-filter="Indicação">Indicação</button>
-                    <button class="filter-chip" data-filter="Listagem">Listagem</button>
-                    <button class="filter-chip" data-filter="Contato Telefônico">Contato Telefônico</button>
-                    <button class="filter-chip" data-filter="Cliente de outro vendedor">Cliente de outro vendedor</button>
-                    <button class="filter-chip" data-filter="Disparo">Disparo</button>
                 </div>
 
                 <div class="list" id="customers-list">
@@ -731,14 +732,15 @@ class App {
         return `
             <div class="view active">
                 <div class="view-header">
-                    <h1 class="view-title">Pedidos</h1>
-                </div>
-
-                <div class="filter-bar">
-                    <button class="filter-chip active" data-filter="all">Todos</button>
-                    <button class="filter-chip" data-filter="pendente">Pendente</button>
-                    <button class="filter-chip" data-filter="pago">Pago</button>
-                    <button class="filter-chip" data-filter="atrasado">Atrasado</button>
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <h1 class="view-title">Pedidos</h1>
+                        <select id="order-filter-select" class="form-control" style="width: auto; margin: 0; padding: 6px 32px 6px 12px; height: auto; border-radius: 20px; font-size: 13px; cursor: pointer;">
+                            <option value="all">Todos</option>
+                            <option value="pendente">Pendente</option>
+                            <option value="pago">Pago</option>
+                            <option value="atrasado">Atrasado</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="list" id="orders-list">
@@ -1743,23 +1745,23 @@ class App {
                 : this.renderEmptyState('Nenhum resultado', 'Tente outro termo');
         });
 
-        // Filtros
-        document.querySelectorAll('[data-filter]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                
-                const filter = btn.dataset.filter;
+        // Filtros (Combobox)
+        const filterSelect = document.getElementById('customer-filter-select');
+        if (filterSelect) {
+            filterSelect.addEventListener('change', (e) => {
+                const filter = e.target.value;
                 const filtered = filter === 'all' 
                     ? store.getCustomers() 
                     : store.getCustomers().filter(c => c.status === filter);
                 
                 const list = document.getElementById('customers-list');
-                list.innerHTML = filtered.length > 0 
-                    ? filtered.map(c => this.renderCustomerItem(c)).join('')
-                    : this.renderEmptyState('Nenhum cliente', 'Nenhum cliente com esse status');
+                if (list) {
+                    list.innerHTML = filtered.length > 0 
+                        ? filtered.map(c => this.renderCustomerItem(c)).join('')
+                        : this.renderEmptyState('Nenhum cliente', 'Nenhum cliente com esse status');
+                }
             });
-        });
+        }
 
         // Delegação de evento para clique no cliente
         const list = document.getElementById('customers-list');
@@ -1809,15 +1811,11 @@ class App {
             }
         });
 
-        document.querySelectorAll('.view[active] .filter-chip, .filter-bar .filter-chip').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const parentView = btn.closest('.view');
-                if (!parentView || !parentView.querySelector('#orders-list')) return;
-
-                parentView.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                
-                const filter = btn.dataset.filter;
+        // Filtros (Combobox)
+        const orderFilterSelect = document.getElementById('order-filter-select');
+        if (orderFilterSelect) {
+            orderFilterSelect.addEventListener('change', (e) => {
+                const filter = e.target.value;
                 const filtered = filter === 'all' 
                     ? store.getOrders() 
                     : store.getOrders().filter(o => o.status_pagamento === filter);
@@ -1829,7 +1827,7 @@ class App {
                         : this.renderEmptyState('Nenhum pedido', 'Nenhum pedido com esse status');
                 }
             });
-        });
+        }
     }
 
     setupTasksView() {
