@@ -110,7 +110,7 @@ async function criarPedido(userId, pedidoData) {
 
         // Calcula valor total
         const valorTotal = pedidoData.items.reduce((total, item) => {
-            return total + (item.quantidade * item.precoUnitario);
+            return total + (item.quantidade * (item.valorUnitario || item.precoUnitario || 0));
         }, 0);
 
         // Gera número do pedido
@@ -177,16 +177,33 @@ async function criarPedido(userId, pedidoData) {
  */
 async function atualizarPedido(userId, pedidoId, pedidoData) {
     try {
+        let valorTotal = 0;
+        
+        if (pedidoData.valorTotal && typeof pedidoData.valorTotal === 'number') {
+            valorTotal = pedidoData.valorTotal;
+        } else if (pedidoData.items && Array.isArray(pedidoData.items)) {
+            valorTotal = pedidoData.items.reduce((sum, item) => {
+                return sum + ((item.quantidade || 0) * (item.valorUnitario || item.precoUnitario || 0));
+            }, 0);
+        }
+        
+        const updateData = {
+            tipo_pagamento: pedidoData.tipoPagamento || pedidoData.tipo_pagamento,
+            parcelas: pedidoData.parcelas,
+            items: pedidoData.items,
+            valor_total: valorTotal,
+            parcelas_detalhes: pedidoData.parcelas_detalhes,
+            observacoes: pedidoData.observacoes || pedidoData.observacoes,
+            updated_at: new Date().toISOString()
+        };
+        
+        if (pedidoData.data) {
+            updateData.data = pedidoData.data;
+        }
+        
         const { data, error } = await supabase
             .from('orders')
-            .update({
-                tipo_pagamento: pedidoData.tipoPagamento || pedidoData.tipo_pagamento,
-                parcelas: pedidoData.parcelas,
-                items: pedidoData.items,
-                parcelas_detalhes: pedidoData.parcelas_detalhes,
-                observacoes: pedidoData.observacoes || pedidoData.observacoes,
-                updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', pedidoId)
             .eq('user_id', userId)
             .select()

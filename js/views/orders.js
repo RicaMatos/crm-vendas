@@ -478,7 +478,7 @@ renderOrderForm(data = null, isEdit = false) {
                 items: items,
                 observacoes: document.getElementById('order-obs').value,
                 data: new Date(document.getElementById('order-date').value + 'T12:00:00Z').toISOString(),
-                numeroPedido: isEditing ? data.numeroPedido : `${Math.floor(1000 + Math.random() * 9000)}-2026`
+                numeroPedido: isEditing ? data.numero_pedido : `${Math.floor(1000 + Math.random() * 9000)}`
             };
             try {
                 if (isEditing) await db.update('orders', data.id, payload);

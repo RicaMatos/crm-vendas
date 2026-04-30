@@ -555,6 +555,7 @@ class App {
                 break;
             case 'tasks':
                 main.innerHTML = this.renderTasks();
+                this.setupTasksView();
                 break;
             default:
                 main.innerHTML = '<p>View não encontrada</p>';
@@ -575,6 +576,9 @@ class App {
                 break;
             case 'crops':
                 this.showCropModal();
+                break;
+            case 'tasks':
+                this.showTaskModal();
                 break;
             default:
                 this.showCustomerModal();
@@ -641,18 +645,27 @@ class App {
                         </div>
                         ${recentOrders.length > 0 ? `
                             <div class="list" id="recent-orders-list">
-                            ${recentOrders.map(order => `
+                            ${recentOrders.map(order => {
+                                let calculatedTotal = parseFloat(order.valor_total || 0);
+                                try {
+                                    const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+                                    if (Array.isArray(items) && items.length > 0) {
+                                        calculatedTotal = items.reduce((sum, item) => sum + ((item.quantidade || 0) * (item.valorUnitario || item.precoUnitario || 0)), 0);
+                                    }
+                                } catch (e) {}
+                                
+                                return `
                                 <div class="list-item" data-id="${order.id}">
                                     <div class="list-item-content">
-                                        <div class="list-item-title">${order.numero_pedido || 'Pedido #' + order.id}</div>
+                                        <div class="list-item-title">${order.numero_pedido || 'Pedido #' + order.id} <span style="color: var(--success); font-weight: 700; margin-left: 8px;">R$ ${calculatedTotal.toFixed(2).replace('.', ',')}</span></div>
                                         <div class="list-item-subtitle">${order.customers?.nome || 'Cliente'}</div>
                                     </div>
                                     <div class="list-item-meta">
-                                        <span class="list-item-value">R$ ${parseFloat(order.valor_total || 0).toFixed(2)}</span>
                                         <span class="badge badge-${order.status_pagamento}">${order.status_pagamento}</span>
                                     </div>
                                 </div>
-                            `).join('')}
+                                `;
+                            }).join('')}
                         </div>
                     ` : '<p class="empty-text">Nenhum pedido ainda</p>'}
                 </div>
@@ -736,16 +749,37 @@ class App {
     }
 
     renderOrderItem(order) {
+        let calculatedTotal = parseFloat(order.valor_total || 0);
+        try {
+            const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+            if (Array.isArray(items) && items.length > 0) {
+                calculatedTotal = items.reduce((sum, item) => sum + ((item.quantidade || 0) * (item.valorUnitario || item.precoUnitario || 0)), 0);
+            }
+        } catch (e) {}
+
+        const dataPedido = order.data ? new Date(order.data).toLocaleDateString('pt-BR') : '';
+        const tipoPagamento = order.tipo_pagamento === 'avista' ? 'À Vista' : 'Parcelado';
+        const parcelas = order.parcelas || 1;
+        
         return `
             <div class="list-item" data-id="${order.id}">
                 <div class="list-item-content">
-                    <div class="list-item-title">${order.numero_pedido || 'Pedido #' + order.id}</div>
+                    <div class="list-item-title">${order.numero_pedido || 'Pedido #' + order.id} <span style="color: var(--success); font-weight: 700; margin-left: 8px;">R$ ${calculatedTotal.toFixed(2).replace('.', ',')}</span></div>
                     <div class="list-item-subtitle">${order.customers?.nome || 'Cliente'}</div>
+                    <div class="list-item-badges">
+                        <span class="badge badge-info">${dataPedido}</span>
+                        <span class="badge badge-info">${tipoPagamento}</span>
+                        <span class="badge badge-info">${parcelas}x</span>
+                    </div>
                 </div>
                 <div class="list-item-meta">
-                    <span class="list-item-value">R$ ${parseFloat(order.valor_total || 0).toFixed(2)}</span>
                     <span class="badge badge-${order.status_pagamento}">${order.status_pagamento}</span>
                 </div>
+                <button class="btn-delete" onclick="app.deleteOrder(${order.id}, event)" title="Excluir">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                    </svg>
+                </button>
             </div>
         `;
     }
@@ -825,26 +859,201 @@ class App {
 
     renderTasks() {
         const tasks = store.getTasks();
+        const today = new Date();
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
+        
+        const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        
+        const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        
+        const tasksByDate = {};
+        tasks.forEach(t => {
+            if (t.data) {
+                const dateKey = t.data.split('T')[0];
+                if (!tasksByDate[dateKey]) tasksByDate[dateKey] = [];
+                tasksByDate[dateKey].push(t);
+            }
+        });
+        
+        let daysHtml = '';
+        for (let i = 0; i < firstDay; i++) {
+            daysHtml += '<div class="calendar-day empty"></div>';
+        }
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayTasks = tasksByDate[dateStr] || [];
+            const isToday = day === today.getDate();
+            const hasTask = dayTasks.length > 0;
+            
+            daysHtml += `
+                <div class="calendar-day ${isToday ? 'today' : ''} ${hasTask ? 'has-task' : ''}" data-date="${dateStr}">
+                    <span class="day-number">${day}</span>
+                    ${hasTask ? `<span class="task-dot">${dayTasks.length}</span>` : ''}
+                </div>
+            `;
+        }
         
         return `
             <div class="view active">
                 <div class="view-header">
-                    <h1 class="view-title">Tarefas</h1>
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <h1 class="view-title">Tarefas</h1>
+                        <button class="btn btn-primary" onclick="app.showTaskModal()" style="margin:0;">+ Nova</button>
+                    </div>
                 </div>
-
-                <div class="list">
-                    ${tasks.length > 0 ? tasks.map(t => `
-                        <div class="list-item" data-id="${t.id}">
-                            <div class="list-item-content">
-                                <div class="list-item-title">${t.titulo}</div>
-                                <div class="list-item-subtitle">${t.data || 'Sem data'}</div>
-                            </div>
-                            <span class="badge badge-${t.status}">${t.status}</span>
+                <div class="tasks-layout" style="display: flex; gap: var(--spacing-xl); align-items: flex-start; flex-wrap: wrap;">
+                    <div class="tasks-sidebar" style="flex: 1; min-width: 300px; max-width: 400px;">
+                        <h3 style="margin: 0 0 16px; font-size: 16px;">Próximas Tarefas</h3>
+                        <div class="list">
+                            ${tasks.length > 0 ? tasks.sort((a, b) => new Date(a.data) - new Date(b.data)).slice(0, 8).map(t => `
+                                <div class="list-item" data-id="${t.id}">
+                                    <div class="list-item-content">
+                                        <div class="list-item-title">${t.titulo}</div>
+                                        <div class="list-item-subtitle">${new Date(t.data).toLocaleDateString('pt-BR')}</div>
+                                    </div>
+                                    <span class="badge badge-${t.status}">${t.status}</span>
+                                </div>
+                            `).join('') : this.renderEmptyState('Nenhuma tarefa', 'Crie tarefas para acompanhar')}
                         </div>
-                    `).join('') : this.renderEmptyState('Nenhuma tarefa', 'Crie tarefas para acompanhar')}
+                    </div>
+                    
+                    <div class="tasks-main" style="flex: 2; min-width: 400px;">
+                        <div class="calendar">
+                            <div class="calendar-header">
+                                <button class="btn btn-icon" onclick="app.changeMonth(-1)">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M15 18l-6-6 6-6"/>
+                                    </svg>
+                                </button>
+                                <h2 class="calendar-title">${monthNames[currentMonth]} ${currentYear}</h2>
+                                <button class="btn btn-icon" onclick="app.changeMonth(1)">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M9 18l6-6-6-6"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="calendar-weekdays">
+                                ${dayNames.map(d => `<div>${d}</div>`).join('')}
+                            </div>
+                            <div class="calendar-days">
+                                ${daysHtml}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
+    }
+
+    showTaskModal(task = null) {
+        const isEdit = !!task;
+        const customers = store.getCustomers();
+        
+        const modalContent = `
+            <div class="modal">
+                <div class="modal-header">
+                    <h2 class="modal-title">${isEdit ? 'Editar Tarefa' : 'Nova Tarefa'}</h2>
+                    <button class="btn-icon" onclick="ui.closeModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 6 6 18M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <form id="task-form" class="modal-body">
+                    <input type="hidden" name="id" value="${task?.id || ''}">
+                    
+                    <div class="form-group">
+                        <label for="titulo">Título *</label>
+                        <input type="text" id="titulo" name="titulo" value="${task?.titulo || ''}" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="customer_id">Cliente (opcional)</label>
+                        <select id="customer_id" name="customer_id">
+                            <option value="">Selecione...</option>
+                            ${customers.map(c => `<option value="${c.id}" ${task?.customer_id === c.id ? 'selected' : ''}>${c.nome}</option>`).join('')}
+                        </select>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="data">Data</label>
+                            <input type="date" id="data" name="data" value="${task?.data?.split('T')[0] || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="prioridade">Prioridade</label>
+                            <select id="prioridade" name="prioridade">
+                                <option value="baixa" ${task?.prioridade === 'baixa' ? 'selected' : ''}>Baixa</option>
+                                <option value="media" ${task?.prioridade === 'media' || !task ? 'selected' : ''}>Média</option>
+                                <option value="alta" ${task?.prioridade === 'alta' ? 'selected' : ''}>Alta</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <select id="status" name="status">
+                            <option value="pendente" ${task?.status === 'pendente' || !task ? 'selected' : ''}>Pendente</option>
+                            <option value="concluida" ${task?.status === 'concluida' ? 'selected' : ''}>Concluída</option>
+                            <option value="cancelada" ${task?.status === 'cancelada' ? 'selected' : ''}>Cancelada</option>
+                        </select>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary" onclick="ui.closeModal()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">${isEdit ? 'Salvar' : 'Criar'}</button>
+                    </div>
+                </form>
+            </div>
+        `;
+        
+        ui.showModal(modalContent);
+        
+        document.getElementById('task-form')?.addEventListener('submit', (e) => {
+            this.handleTaskSubmit(e, isEdit);
+        });
+    }
+
+    async handleTaskSubmit(e, isEdit = false) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        const endpoint = isEdit ? `tasks/${data.id}` : 'tasks';
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        try {
+            const response = await fetch(`${API_BASE}/${endpoint}`, {
+                method: method,
+                headers: {
+                    'Authorization': `Bearer ${auth.token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (!response.ok) throw new Error(result.message || 'Erro ao salvar tarefa');
+            
+            ui.showToast(isEdit ? 'Tarefa atualizada!' : 'Tarefa criada!', 'success');
+            ui.closeModal();
+            this.renderView('tasks');
+            
+        } catch (error) {
+            ui.showToast(error.message, 'error');
+        }
+    }
+
+    changeMonth(delta) {
+        this.currentMonth = this.currentMonth || new Date();
+        this.currentMonth.setMonth(this.currentMonth.getMonth() + delta);
+        this.renderView('tasks');
     }
 
     renderEmptyState(title, subtitle) {
@@ -988,6 +1197,19 @@ class App {
                         </select>
                     </div>
                     
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="data_aniversario">Data de Aniversário</label>
+                            <input type="date" id="data_aniversario" name="data_aniversario" value="${customer?.data_aniversario || ''}">
+                        </div>
+                        <div class="form-group" style="display: flex; align-items: center; padding-top: 24px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="lembrete_aniversario" name="lembrete_aniversario" ${customer?.lembrete_aniversario ? 'checked' : ''}>
+                                <span>Lembrete automático</span>
+                            </label>
+                        </div>
+                    </div>
+                    
                     <div class="btn-group">
                         <button type="button" class="btn btn-secondary" onclick="ui.closeModal()">Cancelar</button>
                         <button type="submit" class="btn btn-primary">${isEdit ? 'Salvar' : 'Criar'}</button>
@@ -1013,12 +1235,22 @@ class App {
             return;
         }
         
-        const modalTitle = isEdit ? 'Editar Pedido' : 'Novo Pedido';
+        const modalTitle = isEdit ? 'Editar Pedido ' + (order?.numero_pedido || '#' + order?.id) : 'Novo Pedido';
+        const dataPedido = order?.data ? new Date(order.data).toLocaleDateString('pt-BR') : '';
+        const tipoPagamentoMap = { avista: 'À Vista', parcelado: 'Parcelado', credito: 'Cartão de Crédito', recebimento: 'Recebimento', boleto: 'Boleto' };
+        const tipoPagamento = tipoPagamentoMap[order?.tipo_pagamento] || order?.tipo_pagamento || 'Cartão de Crédito';
+        const parcelas = order?.parcelas || 1;
+        
+        // Data de hoje padrão para novos pedidos
+        const hojeLocal = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
         
         const modalContent = `
             <div class="modal">
                 <div class="modal-header">
-                    <h2 class="modal-title">${modalTitle}</h2>
+                    <div>
+                        <h2 class="modal-title">${modalTitle}</h2>
+                        ${isEdit ? `<div style="display:flex;gap:8px;margin-top:8px;"><span class="badge badge-info">${dataPedido}</span><span class="badge badge-info">${tipoPagamento}</span><span class="badge badge-info">${parcelas}x</span></div>` : ''}
+                    </div>
                     <button class="btn-icon" onclick="ui.closeModal()">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M18 6 6 18M6 6l12 12"/>
@@ -1036,44 +1268,88 @@ class App {
                     </div>
                     
                     <div class="form-group">
+                        <label for="data">Data do Pedido</label>
+                        <input type="date" id="data" name="data" value="${order?.data ? order.data.split('T')[0] : hojeLocal}" onchange="if(typeof generateInstallments === 'function') generateInstallments()">
+                    </div>
+                    
+                    <div class="form-group">
                         <label>Itens do Pedido</label>
+                        <div class="order-items-header" style="display:flex;gap:6px;font-weight:600;font-size:11px;margin-bottom:4px;">
+                            <span style="flex:1;min-width:120px">Produto</span>
+                            <span style="width:65px">Qtd</span>
+                            <span style="width:90px">Unit. R$</span>
+                            <span style="width:100px">Montante</span>
+                            <span style="width:75px">Comissão %</span>
+                            <span style="width:80px">Comissão R$</span>
+                            <span style="width:25px"></span>
+                        </div>
                         <div id="order-items">
-                            ${order?.items ? order.items.map(item => `
-                                <div class="order-item-row" style="display: flex; gap: 8px; margin-bottom: 8px;">
-                                    <select class="item-product" style="flex: 2;">
+                            ${(order?.items ? (Array.isArray(order.items) ? order.items : JSON.parse(order.items)) : []).length > 0 ? (order?.items ? (Array.isArray(order.items) ? order.items : JSON.parse(order.items)) : []).map(item => `
+                                <div class="order-item-row" style="display: flex; gap: 6px; margin-bottom: 6px; align-items: center;">
+                                    <select class="item-product" style="flex:1;min-width:120px;" onchange="updateOrderItemTotal(this)">
                                         <option value="">Produto...</option>
-                                        ${products.map(p => `<option value="${p.id}" data-price="${p.custo || 0}" ${item.product_id === p.id ? 'selected' : ''}>${p.nome}</option>`).join('')}
+                                        ${products.map(p => `<option value="${p.id}" data-price="${p.custo || 0}" data-comissao="${p.comissao || 0}" ${(item.productId || item.product_id) == p.id ? 'selected' : ''}>${p.nome}</option>`).join('')}
                                     </select>
-                                    <input type="number" class="item-qty" placeholder="Qtd" style="flex: 1; width: 60px;" min="1" value="${item.quantidade}">
-                                    <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">×</button>
+                                    <input type="number" class="item-qty" placeholder="Qtd" style="width:65px;" min="0" step="1" value="${item.quantidade}" oninput="updateOrderItemTotal(this)">
+                                    <input type="number" class="item-price" placeholder="0,00" style="width:90px;" step="0.01" value="${item.valorUnitario || item.precoUnitario || 0}" oninput="updateOrderItemTotal(this)">
+                                    <span class="item-subtotal" style="width:100px;font-weight:600;font-size:12px;">R$ ${((item.quantidade || 1) * (item.valorUnitario || item.precoUnitario || 0)).toFixed(2).replace('.', ',')}</span>
+                                    <input type="number" class="item-comissao" placeholder="0,00" style="width:75px;" step="0.01" value="${item.comissao || products.find(p => p.id == (item.productId || item.product_id))?.comissao || 0}" oninput="updateOrderItemTotal(this)">
+                                    <span class="item-comissao-rs" style="width:80px;font-weight:600;font-size:12px;color:var(--success);">R$ ${(((item.quantidade || 1) * (item.valorUnitario || item.precoUnitario || 0)) * ((item.comissao || products.find(p => p.id == (item.productId || item.product_id))?.comissao || 0) / 100)).toFixed(2).replace('.', ',')}</span>
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove(); updateOrderTotal();">×</button>
                                 </div>
                             `).join('') : `
-                            <div class="order-item-row" style="display: flex; gap: 8px; margin-bottom: 8px;">
-                                <select class="item-product" style="flex: 2;">
+                            <div class="order-item-row" style="display: flex; gap: 6px; margin-bottom: 6px; align-items: center;">
+                                <select class="item-product" style="flex:1;min-width:120px;" onchange="updateOrderItemTotal(this)">
                                     <option value="">Produto...</option>
-                                    ${products.map(p => `<option value="${p.id}" data-price="${p.custo || 0}">${p.nome}</option>`).join('')}
+                                    ${products.map(p => `<option value="${p.id}" data-price="${p.custo || 0}" data-comissao="${p.comissao || 0}">${p.nome}</option>`).join('')}
                                 </select>
-                                <input type="number" class="item-qty" placeholder="Qtd" style="flex: 1; width: 60px;" min="1" value="1">
-                                <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">×</button>
+                                <input type="number" class="item-qty" placeholder="Qtd" style="width:65px;" min="0" step="1" value="1" oninput="updateOrderItemTotal(this)">
+                                <input type="number" class="item-price" placeholder="0,00" style="width:90px;" step="0.01" value="0" oninput="updateOrderItemTotal(this)">
+                                <span class="item-subtotal" style="width:100px;font-weight:600;font-size:12px;">R$ 0,00</span>
+                                <input type="number" class="item-comissao" placeholder="0,00" style="width:75px;" step="0.01" value="0" oninput="updateOrderItemTotal(this)">
+                                <span class="item-comissao-rs" style="width:80px;font-weight:600;font-size:12px;color:var(--success);">R$ 0,00</span>
+                                <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove(); updateOrderTotal();">×</button>
                             </div>
                             `}
                         </div>
                         <button type="button" class="btn btn-sm btn-secondary" onclick="addOrderItemRow()">+ Adicionar Item</button>
+                        
+                        <div id="order-totals" style="margin-top: 16px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+                            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                                <span>Subtotal:</span>
+                                <span id="order-subtotal">R$ 0,00</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;font-weight:600;font-size:18px;">
+                                <span>Total do Pedido:</span>
+                                <span id="order-total">R$ 0,00</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border-color);color:var(--success);">
+                                <span>Comissão a Receber:</span>
+                                <span id="order-comissao-total" style="font-weight:600;">R$ 0,00</span>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="tipo_pagamento">Pagamento</label>
-                            <select id="tipo_pagamento" name="tipo_pagamento">
+                            <label for="tipo_pagamento">Forma de Pagamento</label>
+                            <select id="tipo_pagamento" name="tipo_pagamento" onchange="handlePaymentMethodChange()">
                                 <option value="avista" ${order?.tipo_pagamento === 'avista' ? 'selected' : ''}>À Vista</option>
                                 <option value="parcelado" ${order?.tipo_pagamento === 'parcelado' ? 'selected' : ''}>Parcelado</option>
+                                <option value="credito" ${order?.tipo_pagamento === 'credito' ? 'selected' : ''}>Cartão de Crédito</option>
+                                <option value="recebimento" ${order?.tipo_pagamento === 'recebimento' ? 'selected' : ''}>Pagamento no Recebimento</option>
+                                <option value="boleto" ${order?.tipo_pagamento === 'boleto' ? 'selected' : ''}>Boleto</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label for="parcelas">Parcelas</label>
-                            <input type="number" id="parcelas" name="parcelas" value="${order?.parcelas || 1}" min="1" max="12">
+                            <select id="parcelas" name="parcelas" onchange="generateInstallments()">
+                                ${[...Array(18)].map((_, i) => `<option value="${i+1}" ${order?.parcelas == i+1 ? 'selected' : ''}>${i+1}x</option>`).join('')}
+                            </select>
                         </div>
                     </div>
+                    
+                    <div id="installments-container" style="margin-bottom: 16px;"></div>
                     
                     <div class="form-group">
                         <label for="observacoes">Observações</label>
@@ -1089,6 +1365,10 @@ class App {
         `;
         
         ui.showModal(modalContent);
+        
+        if (isEdit) {
+            setTimeout(() => updateOrderTotal(), 100);
+        }
         
         document.getElementById('order-form')?.addEventListener('submit', (e) => {
             this.handleOrderSubmit(e, isEdit);
@@ -1263,6 +1543,30 @@ class App {
             
             if (!response.ok) throw new Error(result.message);
             
+            const cliente = result.data || result;
+            
+            if (data.data_aniversario && data.lembrete_aniversario) {
+                const [ano, mes, dia] = data.data_aniversario.split('-');
+                const dataLembrete = new Date().getFullYear() + '-' + mes + '-' + dia;
+                
+                const taskData = {
+                    titulo: 'Aniversário de ' + cliente.nome,
+                    data: dataLembrete,
+                    prioridade: 'media',
+                    status: 'pendente',
+                    customer_id: cliente.id
+                };
+                
+                await fetch(`${API_BASE}/tasks`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${auth.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(taskData)
+                });
+            }
+            
             ui.showToast(isEdit ? 'Cliente atualizado!' : 'Cliente criado!', 'success');
             ui.closeModal();
             this.renderView('customers');
@@ -1277,6 +1581,7 @@ class App {
         
         const orderId = document.getElementById('order_id')?.value;
         const customerId = document.getElementById('customer_id')?.value;
+        const data = document.getElementById('data')?.value;
         const tipoPagamento = document.getElementById('tipo_pagamento')?.value;
         const parcelas = parseInt(document.getElementById('parcelas')?.value) || 1;
         const observacoes = document.getElementById('observacoes')?.value;
@@ -1287,18 +1592,23 @@ class App {
         itemRows.forEach((row) => {
             const productSelect = row.querySelector('.item-product');
             const qtyInput = row.querySelector('.item-qty');
+            const priceInput = row.querySelector('.item-price');
+            const comissaoInput = row.querySelector('.item-comissao');
             
             const productId = productSelect?.value;
             const productName = productSelect?.selectedOptions[0]?.text;
-            const quantidade = parseInt(qtyInput?.value) || 1;
-            const precoUnitario = parseFloat(productSelect?.selectedOptions[0]?.dataset.price) || 0;
+            const quantidade = parseFloat(qtyInput?.value) || 0;
+            const valorUnitario = parseFloat(priceInput?.value) || 0;
+            const comissao = parseFloat(comissaoInput?.value) || 0;
             
             if (productId) {
                 items.push({
                     productId: parseInt(productId),
                     nome: productName,
                     quantidade,
-                    precoUnitario
+                    valorUnitario,
+                    precoUnitario: valorUnitario,
+                    comissao
                 });
             }
         });
@@ -1313,11 +1623,15 @@ class App {
             return;
         }
         
+        const valorTotal = items.reduce((sum, item) => sum + (item.quantidade * item.valorUnitario), 0);
+        
         const orderData = {
             customerId: parseInt(customerId),
+            data,
             tipoPagamento,
             parcelas,
             observacoes,
+            valorTotal,
             items
         };
         
@@ -1338,10 +1652,36 @@ class App {
             
             if (!response.ok) throw new Error(result.message || 'Erro ao salvar pedido');
             
+            // Recarrega dados do store
+            if (isEdit) {
+                await store.fetchAll();
+            }
+            
             ui.showToast(isEdit ? 'Pedido atualizado!' : 'Pedido criado com sucesso!', 'success');
             ui.closeModal();
             this.renderView('orders');
             
+        } catch (error) {
+            ui.showToast(error.message, 'error');
+        }
+    }
+
+    async deleteOrder(id, event) {
+        event.stopPropagation();
+        if (!confirm('Tem certeza que deseja excluir este pedido?')) return;
+        
+        try {
+            const response = await fetch(`${API_BASE}/orders/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${auth.token}`
+                }
+            });
+            
+            if (!response.ok) throw new Error('Erro ao excluir pedido');
+            
+            ui.showToast('Pedido excluído!', 'success');
+            this.renderView('orders');
         } catch (error) {
             ui.showToast(error.message, 'error');
         }
@@ -1492,6 +1832,21 @@ class App {
         });
     }
 
+    setupTasksView() {
+        // Delegação de evento para clique na tarefa
+        const list = document.querySelector('#tasks-view .list, .view.active .list');
+        if (list) {
+            list.addEventListener('click', (e) => {
+                const item = e.target.closest('.list-item');
+                if (item) {
+                    const id = item.dataset.id;
+                    const task = store.getTasks().find(t => t.id == id);
+                    if (task) this.showTaskModal(task);
+                }
+            });
+        }
+    }
+
     setupProductsView() {
         const list = document.getElementById('products-list');
         list?.addEventListener('click', (e) => {
@@ -1617,6 +1972,156 @@ window.ui = ui;
 window.auth = auth;
 window.store = store;
 window.app = app;
+window.addOrderItemRow = function() {
+    const products = store.getProducts();
+    const container = document.getElementById('order-items');
+    const div = document.createElement('div');
+    div.className = 'order-item-row';
+    div.style = 'display: flex; gap: 6px; margin-bottom: 6px; align-items: center;';
+    div.innerHTML = `
+        <select class="item-product" style="flex:1;min-width:120px;" onchange="updateOrderItemTotal(this)">
+            <option value="">Produto...</option>
+            ${products.map(p => `<option value="${p.id}" data-price="${p.custo || 0}" data-comissao="${p.comissao || 0}">${p.nome}</option>`).join('')}
+        </select>
+        <input type="number" class="item-qty" placeholder="Qtd" style="width:65px;" min="0" step="1" value="1" oninput="updateOrderItemTotal(this)">
+        <input type="number" class="item-price" placeholder="0,00" style="width:90px;" step="0.01" value="0" oninput="updateOrderItemTotal(this)">
+        <span class="item-subtotal" style="width:100px;font-weight:600;font-size:12px;">R$ 0,00</span>
+        <input type="number" class="item-comissao" placeholder="0,00" style="width:75px;" step="0.01" value="0" oninput="updateOrderItemTotal(this)">
+        <span class="item-comissao-rs" style="width:80px;font-weight:600;font-size:12px;color:var(--success);">R$ 0,00</span>
+        <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove(); updateOrderTotal();">×</button>
+    `;
+    container.appendChild(div);
+};
+
+window.updateOrderItemTotal = function(input) {
+    const row = input.closest('.order-item-row');
+    const productSelect = row.querySelector('.item-product');
+    const selectedOption = productSelect?.selectedOptions[0];
+    
+    if (input.classList.contains('item-product') && input.value) {
+        // Se mudou o produto, preenche Preço (padrão) e Comissão (padrão)
+        const defaultPrice = parseFloat(selectedOption?.dataset.price) || 0;
+        const defaultComissao = parseFloat(selectedOption?.dataset.comissao) || 0;
+        
+        row.querySelector('.item-price').value = defaultPrice.toFixed(2);
+        row.querySelector('.item-comissao').value = defaultComissao.toFixed(2);
+    } 
+
+    const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
+    const price = parseFloat(row.querySelector('.item-price')?.value) || 0;
+    const comissao = parseFloat(row.querySelector('.item-comissao')?.value) || 0;
+    
+    const subtotal = qty * price;
+    row.querySelector('.item-subtotal').textContent = 'R$ ' + subtotal.toFixed(2).replace('.', ',');
+    
+    const comissaoRs = subtotal * (comissao / 100);
+    const comissaoRsSpan = row.querySelector('.item-comissao-rs');
+    if (comissaoRsSpan) {
+        comissaoRsSpan.textContent = 'R$ ' + comissaoRs.toFixed(2).replace('.', ',');
+    }
+    
+    updateOrderTotal();
+};
+
+window.updateOrderTotal = function() {
+    let subtotal = 0;
+    let totalComissao = 0;
+    
+    document.querySelectorAll('.order-item-row').forEach(row => {
+        const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
+        const price = parseFloat(row.querySelector('.item-price')?.value) || 0;
+        const comissaoPct = parseFloat(row.querySelector('.item-comissao')?.value) || 0;
+        
+        const rowTotal = qty * price;
+        subtotal += rowTotal;
+        totalComissao += rowTotal * (comissaoPct / 100);
+    });
+    
+    const subtotalEl = document.getElementById('order-subtotal');
+    if (subtotalEl) subtotalEl.textContent = 'R$ ' + subtotal.toFixed(2).replace('.', ',');
+    
+    const totalEl = document.getElementById('order-total');
+    if (totalEl) totalEl.textContent = 'R$ ' + subtotal.toFixed(2).replace('.', ',');
+    
+    const comissaoEl = document.getElementById('order-comissao-total');
+    if (comissaoEl) comissaoEl.textContent = 'R$ ' + totalComissao.toFixed(2).replace('.', ',');
+    
+    if (typeof window.generateInstallments === 'function') {
+        window.generateInstallments();
+    }
+};
+
+window.handlePaymentMethodChange = function() {
+    const method = document.getElementById('tipo_pagamento').value;
+    const parcelasSelect = document.getElementById('parcelas');
+    
+    if (method === 'recebimento' || method === 'avista') {
+        parcelasSelect.value = "1";
+        parcelasSelect.disabled = true;
+    } else {
+        parcelasSelect.disabled = false;
+    }
+    
+    generateInstallments();
+};
+
+window.generateInstallments = function() {
+    const container = document.getElementById('installments-container');
+    if (!container) return;
+    
+    const parcelas = parseInt(document.getElementById('parcelas').value) || 1;
+    const dataInicialStr = document.getElementById('data').value;
+    const tipoPagamentoEl = document.getElementById('tipo_pagamento');
+    const metodoNome = tipoPagamentoEl.options[tipoPagamentoEl.selectedIndex].text;
+    
+    const subtotalStr = document.getElementById('order-total').textContent.replace('R$ ', '').replace(',', '.');
+    const totalPedido = parseFloat(subtotalStr) || 0;
+    
+    const comissaoStr = document.getElementById('order-comissao-total').textContent.replace('R$ ', '').replace(',', '.');
+    const totalComissao = parseFloat(comissaoStr) || 0;
+    
+    if (parcelas <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    if (!dataInicialStr) {
+        container.innerHTML = '<div style="color:var(--danger);font-size:12px;">Selecione a data do pedido primeiro.</div>';
+        return;
+    }
+    
+    const valorParcela = totalPedido / parcelas;
+    const comissaoParcela = totalComissao / parcelas;
+    
+    let dataAtual = new Date(dataInicialStr);
+    dataAtual = new Date(dataAtual.getTime() + dataAtual.getTimezoneOffset() * 60000);
+    
+    let html = `<div style="margin-top: 8px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+                    <h4 style="margin-bottom: 8px; font-size: 14px;">Resumo das Parcelas</h4>
+                    <div style="display:flex;gap:6px;font-weight:600;font-size:11px;margin-bottom:4px;">
+                        <span style="width:30px">P.</span>
+                        <span style="flex:1">Método</span>
+                        <span style="width:110px">Data</span>
+                        <span style="width:80px">Valor</span>
+                        <span style="width:80px">Comissão</span>
+                    </div>`;
+                    
+    for (let i = 1; i <= parcelas; i++) {
+        dataAtual.setDate(dataAtual.getDate() + 30);
+        const dataFormatada = dataAtual.toISOString().split('T')[0];
+        
+        html += `<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;font-size:12px;">
+                    <span style="width:30px;font-weight:600;">${i}x</span>
+                    <span style="flex:1">${metodoNome}</span>
+                    <input type="date" style="width:110px;padding:4px;" value="${dataFormatada}">
+                    <span style="width:80px">R$ ${valorParcela.toFixed(2).replace('.', ',')}</span>
+                    <span style="width:80px;color:var(--success);">R$ ${comissaoParcela.toFixed(2).replace('.', ',')}</span>
+                 </div>`;
+    }
+    
+    html += `</div>`;
+    container.innerHTML = html;
+};
 
 // Inicia app
 document.addEventListener('DOMContentLoaded', () => app.init());
