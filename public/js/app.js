@@ -826,6 +826,41 @@ class App {
         };
 
         const recentOrders = store.getOrders().slice(0, 5);
+        
+        // Calcular produtos mais vendidos
+        const products = store.getProducts();
+        const orders = store.getOrders();
+        
+        const productSales = {};
+        orders.forEach(order => {
+            try {
+                const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+                if (Array.isArray(items)) {
+                    items.forEach(item => {
+                        const productId = item.produto_id || item.productId;
+                        const productName = item.produto || item.productName || 'Produto';
+                        const qty = parseFloat(item.quantidade) || 0;
+                        const unity = item.unidade || item.und || products.find(p => p.id === productId)?.unidade || 'un';
+                        
+                        if (!productSales[productId]) {
+                            productSales[productId] = {
+                                name: productName,
+                                quantidade: 0,
+                                unidade: unity
+                            };
+                        }
+                        productSales[productId].quantidade += qty;
+                    });
+                }
+            } catch (e) {}
+        });
+        
+        // Ordenar por quantidade
+        const topProducts = Object.entries(productSales)
+            .sort((a, b) => b[1].quantidade - a[1].quantidade)
+            .slice(0, 10);
+        
+        const maxQty = topProducts.length > 0 ? topProducts[0][1].quantidade : 1;
 
         return `
             <div class="view active">
@@ -849,6 +884,63 @@ class App {
                     <div class="stat-card">
                         <div class="stat-label">Tarefas</div>
                         <div class="stat-value">${stats.tarefas}</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px; margin-top: 24px;">
+                    <!-- Cards Laterais de Produtos -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Produtos Vendidos</h3>
+                        </div>
+                        ${topProducts.length > 0 ? `
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                ${topProducts.map(([id, data], index) => {
+                                    const percentage = maxQty > 0 ? (data.quantidade / maxQty * 100) : 0;
+                                    const colors = ['#2383e2', '#4daa57', '#cb912f', '#e03e3e', '#9b51e0', '#3d7fa8', '#5aabf8', '#ff8e6e'];
+                                    const color = colors[index % colors.length];
+                                    return `
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color}; flex-shrink: 0;"></div>
+                                            <div style="flex: 1;">
+                                                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
+                                                    <span style="font-weight: 500; color: var(--text-primary);">${data.name}</span>
+                                                    <span style="font-weight: 600; color: var(--text-primary);">${data.quantidade.toLocaleString('pt-BR')} ${data.unidade}</span>
+                                                </div>
+                                                <div style="height: 4px; background: var(--bg-tertiary); border-radius: 2px; overflow: hidden;">
+                                                    <div style="height: 100%; width: ${percentage}%; background: ${color}; border-radius: 2px;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        ` : '<p class="empty-text">Nenhuma venda registrada</p>'}
+                    </div>
+                    
+                    <!-- Gráfico de Barras -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Ranking - Mais Vendidos</h3>
+                        </div>
+                        ${topProducts.length > 0 ? `
+                            <div style="height: 300px; display: flex; align-items: flex-end; gap: 12px; padding: 20px 0;">
+                                ${topProducts.map(([id, data], index) => {
+                                    const percentage = maxQty > 0 ? (data.quantidade / maxQty * 100) : 0;
+                                    const colors = ['#2383e2', '#4daa57', '#cb912f', '#e03e3e', '#9b51e0', '#3d7fa8', '#5aabf8', '#ff8e6e'];
+                                    const color = colors[index % colors.length];
+                                    return `
+                                        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                                            <div style="font-size: 12px; font-weight: 600; color: var(--text-primary);">${data.quantidade}</div>
+                                            <div style="width: 100%; background: var(--bg-tertiary); border-radius: 4px 4px 0 0; position: relative; height: ${percentage * 2.5}px; min-height: 20px;">
+                                                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: ${color}; border-radius: 4px 4px 0 0; height: 100%;"></div>
+                                            </div>
+                                            <div style="font-size: 10px; color: var(--text-muted); text-align: center; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${data.name}</div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        ` : '<p class="empty-text">Nenhuma venda registrada</p>'}
                     </div>
                 </div>
 
