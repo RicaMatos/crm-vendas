@@ -27,34 +27,21 @@ export const dashboardView = {
         availableYears.sort((a,b) => b - a);
         
         container.innerHTML = `
-            <div class="dashboard-perf-container animate-fade">
-                <header class="perf-header">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <h1><i data-lucide="bar-chart-3" style="color: #06b6d4;"></i> PAINEL DE PERFORMANCE DO REPRESENTANTE COMERCIAL</h1>
-                        <div class="filter-group-container" style="padding: 10px 16px;">
-                            <div class="filter-item">
-                                <label>ANO</label>
-                                <select id="dashFilterYear">
-                                    ${availableYears.map(y => `<option value="${y}">${y}</option>`).join('')}
-                                </select>
-                            </div>
-                        </div>
+            <div class="animate-fade" style="padding: 8px 0;">
+                <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary);">Painel de Performance</h2>
+                    <div>
+                        <select id="dashFilterYear" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 6px; font-size: 0.85rem;">
+                            ${availableYears.map(y => `<option value="${y}">${y}</option>`).join('')}
+                        </select>
                     </div>
                 </header>
-
-                <div id="dashContent">
-                </div>
+                <div id="dashContent"></div>
             </div>
         `;
 
         const fy = document.getElementById('dashFilterYear');
         if (fy) {
-            fy.style.background = '#0f172a';
-            fy.style.color = 'white';
-            fy.style.border = '1px solid #334155';
-            fy.style.padding = '6px 10px';
-            fy.style.borderRadius = '8px';
-            fy.style.fontSize = '0.85rem';
             fy.addEventListener('change', (e) => this.updateDashboard('Todos os Produtos', e.target.value));
         }
 
@@ -309,7 +296,7 @@ export const dashboardView = {
 
         dashContent.innerHTML = `
             <div class="perf-grid-top">
-                <div class="kpi-card">
+                <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid var(--primary);">
                     <div class="kpi-card-header">
                         <div class="label"><i data-lucide="circle-dollar-sign" style="color: #10b981;"></i> VENDAS TOTAIS</div>
                         <select class="kpi-period-filter" data-kpi="vendas">
@@ -323,7 +310,7 @@ export const dashboardView = {
                         <div class="value" id="kpiVendasValue">R$ ${filteredTotalVendas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                     </div>
                 </div>
-                <div class="kpi-card">
+                <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid var(--success);">
                     <div class="kpi-card-header">
                         <div class="label"><i data-lucide="check-circle" style="color: #06b6d4;"></i> COMISSÃO RECEBIDA</div>
                         <select class="kpi-period-filter" data-kpi="comissao_recebida">
@@ -338,7 +325,7 @@ export const dashboardView = {
                         <div class="sub-text">${totalParcelasRecebidas} parcela(s) paga(s)</div>
                     </div>
                 </div>
-                <div class="kpi-card">
+                <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid var(--info);">
                     <div class="kpi-card-header">
                         <div class="label"><i data-lucide="clock" style="color: #f97316;"></i> COMISSÃO A RECEBER</div>
                         <select class="kpi-period-filter" data-kpi="comissao_a_receber">
@@ -353,7 +340,7 @@ export const dashboardView = {
                         <div class="sub-text">${totalParcelasAReceber} parcela(s) aberta(s)</div>
                     </div>
                 </div>
-                <div class="kpi-card ${comissaoProximoRecebimento > 0 ? 'proximo-recebimento-card' : ''}">
+                <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid #787774;">
                     <div class="kpi-card-header">
                         <div class="label"><i data-lucide="calendar-check" style="color: #8b5cf6;"></i> PRÓXIMO RECEBIMENTO</div>
                     </div>
@@ -557,8 +544,8 @@ export const dashboardView = {
         if (ctxM) {
             this.charts.men = new Chart(ctxM, {
                 type: 'bar',
-                data: { labels: ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'], datasets: [{ data: monthly, backgroundColor: '#06b6d4', borderRadius: 6 }] },
-                options: { ...config, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } }, y: { display: false } } }
+                data: { labels: ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'], datasets: [{ data: monthly, backgroundColor: 'rgba(35, 131, 226, 0.6)', borderRadius: 4 }] },
+                options: { ...config, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { x: { ticks: { color: '#787774', font: { size: 10 } }, grid: { display: false } }, y: { display: false } } }
             });
         }
 

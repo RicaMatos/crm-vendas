@@ -505,6 +505,20 @@ class App {
             ui.showToast('Logout realizado', 'info');
         });
 
+        // Theme toggle
+        this.initTheme();
+        document.getElementById('theme-toggle')?.addEventListener('click', () => {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('CRM_THEME', next);
+            this.updateThemeIcons(next);
+            // Update meta theme-color
+            const meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.content = next === 'dark' ? '#191919' : '#ffffff';
+        });
+
         // Navegação
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', (e) => {
@@ -693,6 +707,23 @@ class App {
             btn.disabled = false;
             btn.textContent = 'Alterar Senha';
         });
+    }
+
+    initTheme() {
+        const saved = localStorage.getItem('CRM_THEME');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = saved || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+        this.updateThemeIcons(theme);
+    }
+
+    updateThemeIcons(theme) {
+        const sun = document.getElementById('theme-icon-sun');
+        const moon = document.getElementById('theme-icon-moon');
+        if (sun && moon) {
+            sun.style.display = theme === 'dark' ? 'block' : 'none';
+            moon.style.display = theme === 'dark' ? 'none' : 'block';
+        }
     }
 
     setupOfflineManager() {

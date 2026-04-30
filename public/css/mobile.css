@@ -691,18 +691,4 @@ body {
     }
 }
 
-/* ============================================
-   DARK MODE (FUTURO)
-   ============================================ */
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --bg-primary: #0f172a;
-        --bg-secondary: #1e293b;
-        --bg-tertiary: #334155;
-        --text-primary: #f1f5f9;
-        --text-secondary: #94a3b8;
-        --text-muted: #64748b;
-        --border-color: #334155;
-    }
-}
+/* Dark mode is now handled by data-theme attribute in main.css */
