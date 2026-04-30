@@ -1618,7 +1618,19 @@ class App {
         document.getElementById('crop-form')?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
-            const data = Object.fromEntries(formData.entries());
+            const rawData = Object.fromEntries(formData.entries());
+            
+            // Converter IDs para números
+            const data = {};
+            for (const [key, value] of Object.entries(rawData)) {
+                if (value !== '' && value !== null && value !== undefined) {
+                    if (key === 'id') {
+                        data[key] = parseInt(value);
+                    } else {
+                        data[key] = value;
+                    }
+                }
+            }
             
             try {
                 ui.showLoading(true);
@@ -1728,7 +1740,19 @@ class App {
         e.preventDefault();
         const form = e.target;
         const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
+        const rawData = Object.fromEntries(formData.entries());
+        
+        // Processar dados - converter IDs para números e limpar vazios
+        const data = {};
+        for (const [key, value] of Object.entries(rawData)) {
+            if (value !== '' && value !== null && value !== undefined) {
+                if (key === 'id' || key === 'crop_id') {
+                    data[key] = parseInt(value);
+                } else {
+                    data[key] = value;
+                }
+            }
+        }
         
         // Validar status
         const validStatuses = ['Lead', 'Indicação', 'Listagem', 'Contato Telefônico', 'Cliente de outro vendedor', 'Disparo'];
