@@ -1358,12 +1358,14 @@ class App {
                     </div>
                     
                     <div class="form-group">
-                        <label for="status">Status</label>
+                        <label for="status">Origem</label>
                         <select id="status" name="status">
                             <option value="Lead" ${customer?.status === 'Lead' || !customer ? 'selected' : ''}>Lead</option>
-                            <option value="Prospect" ${customer?.status === 'Prospect' ? 'selected' : ''}>Prospect</option>
-                            <option value="Cliente" ${customer?.status === 'Cliente' ? 'selected' : ''}>Cliente</option>
-                            <option value="Inativo" ${customer?.status === 'Inativo' ? 'selected' : ''}>Inativo</option>
+                            <option value="Indicação" ${customer?.status === 'Indicação' ? 'selected' : ''}>Indicação</option>
+                            <option value="Listagem" ${customer?.status === 'Listagem' ? 'selected' : ''}>Listagem</option>
+                            <option value="Contato Telefônico" ${customer?.status === 'Contato Telefônico' ? 'selected' : ''}>Contato Telefônico</option>
+                            <option value="Cliente de outro vendedor" ${customer?.status === 'Cliente de outro vendedor' ? 'selected' : ''}>Cliente de outro vendedor</option>
+                            <option value="Disparo" ${customer?.status === 'Disparo' ? 'selected' : ''}>Disparo</option>
                         </select>
                     </div>
                     
@@ -1729,7 +1731,7 @@ class App {
         const data = Object.fromEntries(formData.entries());
         
         // Validar status
-        const validStatuses = ['Lead', 'Prospect', 'Cliente', 'Inativo'];
+        const validStatuses = ['Lead', 'Indicação', 'Listagem', 'Contato Telefônico', 'Cliente de outro vendedor', 'Disparo'];
         if (data.status && !validStatuses.includes(data.status)) {
             data.status = 'Lead';
         }
