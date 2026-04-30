@@ -12,17 +12,38 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Node.js
+      - name: Install Node. js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Render CLI
+        run: |
+          curl -L https://github.com/render-oss/cli/releases/download/v1.1.0/cli_1.1.0_linux_amd64.tar.gz -o render.tar.gz
+          tar -xzf render.tar.gz
+          sudo mv cli_v1.1.0/render /usr/local/bin/render
+        shell: bash
+
       - name: Deploy to Render
-        uses: johnbeynon/render-deploy-action@v0.0.1
-        with:
-          render-service-id: ${{ secrets.RENDER_SERVICE_ID }}
-          api-key: ${{ secrets.RENDER_API_KEY }}
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          CI: true
+        run: |
+          render services create \
+            --name crm-vendas \
+            --type web_service \
+            --runtime node \
+            --region oregon \
+            --plan free \
+            --repo https://github.com/RicaMatos/crm-vendas.git \
+            --branch main \
+            --build-command "npm install" \
+            --start-command "node server. js" \
+            --auto-deploy true \
+            --env SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --env SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }} \
+            --env SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
+            --output json
