@@ -557,7 +557,8 @@ export const dashboardView = {
         }
 
         const ctxC = document.getElementById('chartComissoes');
-        if (ctxC && projection.labels && projection.receivedData && projection.projectedData) {
+        console.log('[DEBUG] chartComissoes ctx:', !!ctxC, 'labels:', projection?.labels?.length, 'received:', projection?.receivedData?.length, 'projected:', projection?.projectedData?.length);
+        if (ctxC && projection?.labels && projection?.receivedData && projection?.projectedData) {
             const receivedData = projection.receivedData;
             const projectedData = projection.projectedData;
             
