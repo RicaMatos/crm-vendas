@@ -384,6 +384,13 @@ export const dashboardView = {
                 </div>
             </div>
 
+            <div class="perf-grid-mid">
+                <div class="chart-card" style="grid-column: span 2;">
+                    <h3>PAGAMENTO DE COMISSÕES</h3>
+                    <div class="chart-box"><canvas id="chartComissoes"></canvas></div>
+                </div>
+            </div>
+
             <div class="perf-grid-bottom">
                 <div class="chart-card">
                     <h3>PROJEÇÃO DE RECEBIMENTO DE COMISSÃO</h3>
@@ -546,6 +553,41 @@ export const dashboardView = {
                 type: 'bar',
                 data: { labels: ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'], datasets: [{ data: monthly, backgroundColor: 'rgba(35, 131, 226, 0.6)', borderRadius: 4 }] },
                 options: { ...config, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { x: { ticks: { color: '#787774', font: { size: 10 } }, grid: { display: false } }, y: { display: false } } }
+            });
+        }
+
+        const ctxC = document.getElementById('chartComissoes');
+        if (ctxC && projection.labels && projection.receivedData && projection.projectedData) {
+            const receivedData = projection.receivedData;
+            const projectedData = projection.projectedData;
+            
+            const data15 = receivedData.map((v, i) => i % 2 === 0 ? v : 0);
+            const data30 = receivedData.map((v, i) => i % 2 === 1 ? v : 0);
+            const proj15 = projectedData.map((v, i) => i % 2 === 0 ? v : 0);
+            const proj30 = projectedData.map((v, i) => i % 2 === 1 ? v : 0);
+
+            this.charts.com = new Chart(ctxC, {
+                type: 'bar',
+                data: {
+                    labels: projection.labels,
+                    datasets: [
+                        { label: 'Recebido 15', data: data15, backgroundColor: '#10b981', borderRadius: 3 },
+                        { label: 'Recebido 30', data: data30, backgroundColor: '#059669', borderRadius: 3 },
+                        { label: 'Projetado 15', data: proj15, backgroundColor: 'rgba(249, 115, 22, 0.5)', borderRadius: 3 },
+                        { label: 'Projetado 30', data: proj30, backgroundColor: 'rgba(234, 88, 12, 0.5)', borderRadius: 3 }
+                    ]
+                },
+                options: {
+                    ...config,
+                    plugins: {
+                        legend: { display: true, position: 'top', labels: { color: '#94a3b8', boxWidth: 12, padding: 15, font: { size: 10 } } },
+                        datalabels: { display: false }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#787774', font: { size: 10 } }, grid: { display: false } },
+                        y: { ticks: { color: '#787774', font: { size: 10 }, callback: (v) => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 0 }) }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
             });
         }
 
