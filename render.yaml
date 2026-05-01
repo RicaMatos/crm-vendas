@@ -1,11 +1,21 @@
-{
-  "name": "crm-vendas",
-  "buildCommand": "npm install",
-  "startCommand": "node server.js",
-  "env": [
-    {
-      "key": "NODE_VERSION",
-      "value": "18"
-    }
-  ]
-}
+services:
+  - type: web
+    name: crm-vendas-backend
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: "18"
+      - key: PORT
+        value: "3000"
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
