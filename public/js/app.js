@@ -986,15 +986,10 @@ class App {
                         paydayDay = 15;
                         paydayMonth = vencMonth;
                         paydayYear = vencYear;
-                    } else if (vencDay <= 26) {
+                    } else {
                         paydayDay = 30;
                         paydayMonth = vencMonth;
                         paydayYear = vencYear;
-                    } else {
-                        paydayDay = 15;
-                        paydayMonth = vencMonth + 1;
-                        paydayYear = vencYear;
-                        if (paydayMonth > 11) { paydayMonth = 0; paydayYear += 1; }
                     }
                     
                     if (paydayYear !== currentYear) return;

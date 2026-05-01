@@ -111,15 +111,10 @@ export const dashboardView = {
             payday = 15;
             paydayMonth = vencimento.getMonth();
             paydayYear = vencimento.getFullYear();
-        } else if (day <= 26) {
+        } else {
             payday = 30;
             paydayMonth = vencimento.getMonth();
             paydayYear = vencimento.getFullYear();
-        } else {
-            payday = 15;
-            paydayMonth = vencimento.getMonth() + 1;
-            paydayYear = vencimento.getFullYear();
-            if (paydayMonth > 11) { paydayMonth = 0; paydayYear += 1; }
         }
         
         return { payday, paydayMonth, paydayYear };
