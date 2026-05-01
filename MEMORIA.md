@@ -10,6 +10,7 @@
 - Aplicar princípios de código limpo
 - Incluir comentários detalhados em português ao gerar ou editar arquivos
 - Sempre consultar este arquivo de memória antes de propor alterações
+- **OBRIGATÓRIO:** Todo o retorno de análise, planejamento e comunicação deve ser em Português do Brasil.
 
 ## Histórico de Tarefas
 
@@ -42,6 +43,12 @@
 | 30/04/2026 | WhatsApp/Telefone apenas números |
 | 30/04/2026 | Calendário de Tarefas com navegação entre meses |
 | 30/04/2026 | Dashboard - removidos KPIs de percentual e status |
+| 01/05/2026 | Ajuste na exibição de valores em reais (pontos para casas decimais) |
+| 01/05/2026 | Correção do bug das parcelas no resumo de parcelamento |
+| 01/05/2026 | Adição de gráfico de Pagamento de Comissões no dashboard |
+| 01/05/2026 | Ajuste de largura das barras do gráfico de comissões |
+| 01/05/2026 | Correção na regra de payday (datas de corte) |
+| 01/05/2026 | Correção: projetado = pago + pendente |
 
 ## Histórico de Alterações
 
@@ -59,7 +66,7 @@
 
 ### GitHub ✅
 - Repositório: https://github.com/RicaMatos/crm-vendas
-- ÚLTIMO COMMIT: fe8c6fe - Fix: tratamento de email não confirmado no login
+- ÚLTIMO COMMIT: 4709ea6 - Corrige logica: projetado = pago + pendente
 - STATUS: ✅ Online
 
 ### Vercel ✅
@@ -96,6 +103,7 @@ Necessário configurar no Vercel Dashboard:
 - ✅ Login direto (fallback)
 - ✅ Tratamento de email não confirmado
 - ✅ RLS no Supabase (segurança)
+- ✅ Gráfico de Pagamento de Comissões (barras quinzenais)
 
 ## Deploy - Vercel (Recomendado)
 
@@ -124,6 +132,11 @@ Necessário configurar no Vercel Dashboard:
 | JWT_SECRET | crm_vendas_2026_chave_jwt_producao_segura_aleatoria |
 
 ⚠️ IMPORTANTE: O domínio correto é **zgtakbznmuxkibxybdky** (não zgtkbnzmun!)
+
+### Regras de Payday (Datas de Corte)
+- Dia 1-12 → paga no dia 15 do mesmo mês
+- Dia 13-27 → paga no dia 30 do mesmo mês
+- Dia 28-31 → paga no dia 15 do próximo mês
 
 ### 3. Passos para deploy:
 
