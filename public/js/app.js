@@ -965,21 +965,37 @@ class App {
                     const status = (p.status || '').toLowerCase();
                     if (!p.vencimento) return;
                     
-                    let paydayDay = 15;
-                    const day = new Date(p.vencimento).getDate();
-                    if (day <= 12) paydayDay = 15;
-                    else if (day <= 26) paydayDay = 30;
-                    else paydayDay = 15;
+                    // Parse da data do vencimento sem problema de timezone
+                    const vencParts = p.vencimento.split('-');
+                    const vencYear = parseInt(vencParts[0]);
+                    const vencMonth = parseInt(vencParts[1]) - 1;
+                    const vencDay = parseInt(vencParts[2]);
                     
-                    const mes = new Date(p.vencimento).getMonth();
-                    if (new Date(p.vencimento).getFullYear() !== currentYear) return;
+                    // Calcular payday e mês de pagamento
+                    let paydayDay, paydayMonth, paydayYear;
+                    if (vencDay <= 12) {
+                        paydayDay = 15;
+                        paydayMonth = vencMonth;
+                        paydayYear = vencYear;
+                    } else if (vencDay <= 26) {
+                        paydayDay = 30;
+                        paydayMonth = vencMonth;
+                        paydayYear = vencYear;
+                    } else {
+                        paydayDay = 15;
+                        paydayMonth = vencMonth + 1;
+                        paydayYear = vencYear;
+                        if (paydayMonth > 11) { paydayMonth = 0; paydayYear += 1; }
+                    }
+                    
+                    if (paydayYear !== currentYear) return;
                     
                     if (status === 'pago') {
-                        if (paydayDay === 15) comissaoQuinzenal.received15[mes] = (comissaoQuinzenal.received15[mes] || 0) + comissao;
-                        else comissaoQuinzenal.received30[mes] = (comissaoQuinzenal.received30[mes] || 0) + comissao;
+                        if (paydayDay === 15) comissaoQuinzenal.received15[paydayMonth] = (comissaoQuinzenal.received15[paydayMonth] || 0) + comissao;
+                        else comissaoQuinzenal.received30[paydayMonth] = (comissaoQuinzenal.received30[paydayMonth] || 0) + comissao;
                     } else {
-                        if (paydayDay === 15) comissaoQuinzenal.projected15[mes] = (comissaoQuinzenal.projected15[mes] || 0) + comissao;
-                        else comissaoQuinzenal.projected30[mes] = (comissaoQuinzenal.projected30[mes] || 0) + comissao;
+                        if (paydayDay === 15) comissaoQuinzenal.projected15[paydayMonth] = (comissaoQuinzenal.projected15[paydayMonth] || 0) + comissao;
+                        else comissaoQuinzenal.projected30[paydayMonth] = (comissaoQuinzenal.projected30[paydayMonth] || 0) + comissao;
                     }
                 });
             }
