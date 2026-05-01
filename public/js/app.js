@@ -1101,10 +1101,10 @@ class App {
                                 return `
                                     <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;">
                                         <div style="width: 100%; display: flex; gap: 2px; justify-content: center; align-items: flex-end; height: 100px;">
-                                            <div style="width: 22%; background: #10b981; border-radius: 2px 2px 0 0; height: ${h15r}%;" title="Recebido 15: ${formatarBRL(comissaoQuinzenal.received15[i] || 0)}"></div>
-                                            <div style="width: 22%; background: #059669; border-radius: 2px 2px 0 0; height: ${h30r}%;" title="Recebido 30: ${formatarBRL(comissaoQuinzenal.received30[i] || 0)}"></div>
-                                            <div style="width: 22%; background: rgba(249,115,22,0.5); border-radius: 2px 2px 0 0; height: ${h15p}%;" title="Projetado 15: ${formatarBRL(comissaoQuinzenal.projected15[i] || 0)}"></div>
-                                            <div style="width: 22%; background: rgba(234,88,12,0.5); border-radius: 2px 2px 0 0; height: ${h30p}%;" title="Projetado 30: ${formatarBRL(comissaoQuinzenal.projected30[i] || 0)}"></div>
+                                            <div style="width: 26%; background: #10b981; border-radius: 2px 2px 0 0; height: ${h15r}%;" title="Recebido 15: ${formatarBRL(comissaoQuinzenal.received15[i] || 0)}"></div>
+                                            <div style="width: 26%; background: #059669; border-radius: 2px 2px 0 0; height: ${h30r}%;" title="Recebido 30: ${formatarBRL(comissaoQuinzenal.received30[i] || 0)}"></div>
+                                            <div style="width: 26%; background: rgba(249,115,22,0.5); border-radius: 2px 2px 0 0; height: ${h15p}%;" title="Projetado 15: ${formatarBRL(comissaoQuinzenal.projected15[i] || 0)}"></div>
+                                            <div style="width: 26%; background: rgba(234,88,12,0.5); border-radius: 2px 2px 0 0; height: ${h30p}%;" title="Projetado 30: ${formatarBRL(comissaoQuinzenal.projected30[i] || 0)}"></div>
                                         </div>
                                         <div style="font-size: 9px; color: var(--text-muted);">${mes}</div>
                                     </div>
