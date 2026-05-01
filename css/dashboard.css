@@ -354,6 +354,36 @@
     gap: 16px;
 }
 
+.btn-parcela-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.2s;
+}
+
+.btn-parcela-status.pendente {
+    background: #fef3c7;
+    color: #d97706;
+    border-color: #fcd34d;
+}
+
+.btn-parcela-status.pendente:hover {
+    background: #fde68a;
+}
+
+.btn-parcela-status.pago {
+    background: #d1fae5;
+    color: #059669;
+    border-color: #6ee7b7;
+}
+
+.btn-parcela-status.pago:hover {
+    background: #a7f3d0;
+}
+
 .btn-text {
     background: transparent;
     border: none;

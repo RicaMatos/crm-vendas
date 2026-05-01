@@ -116,12 +116,16 @@ async function criarPedido(userId, pedidoData) {
         // Gera número do pedido
         const numeroPedido = await gerarNumeroPedido(userId);
 
-        // Processa parcelas
-        const parcelasDetalhes = processarParcelas(
-            valorTotal,
-            pedidoData.parcelas || 1,
-            pedidoData.vencimentoPrimeiraParcela
-        );
+        // Processa parcelas - prioriza detalhes enviados pelo frontend
+        let parcelasDetalhes = pedidoData.parcelas_detalhes;
+        
+        if (!parcelasDetalhes || !Array.isArray(parcelasDetalhes)) {
+            parcelasDetalhes = processarParcelas(
+                valorTotal,
+                pedidoData.parcelas || 1,
+                pedidoData.vencimentoPrimeiraParcela
+            );
+        }
 
         const customerId = pedidoData.customerId || pedidoData.customer_id;
 

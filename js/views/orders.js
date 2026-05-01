@@ -63,9 +63,47 @@ export const ordersView = {
                     const taxaComissao = totalItensVal > 0 ? Math.round(taxaPonderada / totalItensVal) : 0;
 
                     // Conta parcelas pagas
-                    const detalhes = Array.isArray(o.parcelas_detalhes) ? o.parcelas_detalhes : [];
-                    const totalParcelas = detalhes.length || (parseInt(o.parcelas) || 1);
+                    let detalhes = Array.isArray(o.parcelas_detalhes) ? o.parcelas_detalhes : [];
+                    const totalParcelasInfo = parseInt(o.parcelas) || 1;
+                    
+                    // Se não tem detalhes mas tem parcelas > 1, gerar automaticamente
+                    if (detalhes.length === 0 && totalParcelasInfo > 1) {
+                        const valorPorParcela = o.valorTotal / totalParcelasInfo;
+                        const baseDate = o.data ? new Date(o.data) : new Date();
+                        detalhes = [];
+                        for (let i = 1; i <= totalParcelasInfo; i++) {
+                            const date = new Date(baseDate);
+                            date.setMonth(baseDate.getMonth() + (i - 1));
+                            detalhes.push({
+                                numero: i,
+                                valor: parseFloat(valorPorParcela.toFixed(2)),
+                                vencimento: date.toISOString().split('T')[0],
+                                status: 'Pendente'
+                            });
+                        }
+                    }
+                    
+                    const totalParcelas = detalhes.length || totalParcelasInfo;
                     const parcelasPagas = detalhes.filter(p => p && (p.status === 'Pago' || p.status === 'pago')).length;
+
+                    // Gera HTML das parcelas com botões
+                    const parcelasHtml = detalhes.length > 0 ? `
+                        <div class="parcelas-list" style="margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px;">
+                            ${detalhes.map((p, idx) => {
+                                const isPago = p.status === 'Pago' || p.status === 'pago';
+                                return `
+                                    <button class="btn-status-pill ${isPago ? 'pago' : 'pendente'}" 
+                                            data-order-id="${o.id}" 
+                                            data-parcela-idx="${idx}"
+                                            style="padding: 4px 8px; font-size: 0.65rem;"
+                                            title="Clique para alternar status">
+                                        <i data-lucide="${isPago ? 'check-circle' : 'circle'}" style="width: 10px; height: 10px;"></i>
+                                        ${idx + 1}ª: R$ ${parseFloat(p.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </button>
+                                `;
+                            }).join('')}
+                        </div>
+                    ` : '';
 
                     return `
                         <div class="customer-card animate-fade">
@@ -86,6 +124,7 @@ export const ordersView = {
                                         <span style="font-weight: 600; color: ${parcelasPagas === totalParcelas && totalParcelas > 0 ? '#10b981' : '#f59e0b'};"><i data-lucide="credit-card" style="width: 13px; height: 13px; vertical-align: middle;"></i> ${parcelasPagas}/${totalParcelas} pagas</span>
                                         ${taxaComissao > 0 ? `<span class="dot">•</span><span style="font-weight: 700; color: #10b981;"><i data-lucide="coins" style="width: 13px; height: 13px; vertical-align: middle;"></i> Comissão: R$ ${(o.valorTotal * taxaComissao / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>` : ''}
                                     </div>
+                                    ${parcelasHtml}
                                 </div>
                             </div>
                             
@@ -140,6 +179,23 @@ bindOrderEvents() {
             cards.forEach(card => {
                 const name = card.querySelector('.customer-name').innerText.toLowerCase();
                 card.style.display = name.includes(term) ? 'flex' : 'none';
+            });
+        });
+
+        // Alternar status da parcela
+        document.querySelectorAll('.parcelas-list .btn-status-pill').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const orderId = btn.getAttribute('data-order-id');
+                const parcelaIdx = parseInt(btn.getAttribute('data-parcela-idx'));
+                const order = db.getById('orders', orderId);
+                
+                if (order && order.parcelas_detalhes && order.parcelas_detalhes[parcelaIdx]) {
+                    const currentStatus = order.parcelas_detalhes[parcelaIdx].status;
+                    order.parcelas_detalhes[parcelaIdx].status = (currentStatus === 'Pago' || currentStatus === 'pago') ? 'Pendente' : 'Pago';
+                    
+                    await db.update('orders', orderId, { parcelas_detalhes: order.parcelas_detalhes });
+                    this.renderOrders(document.getElementById('content-area'));
+                }
             });
         });
     },
@@ -231,21 +287,8 @@ renderOrderForm(data = null, isEdit = false) {
                 </div>
 
                 <div id="installments-section" style="display: none;">
-                    <p class="section-title">Detalhes das Parcelas</p>
-                    <div class="card p-0 m-b-2" style="overflow: hidden; border: 1px solid #e2e8f0;">
-                        <table class="data-table" style="font-size: 0.85rem;">
-                            <thead style="background: #f8fafc;">
-                                <tr>
-                                    <th style="padding: 10px;">Parcela</th>
-                                    <th style="padding: 10px;">Valor (R$)</th>
-                                    <th style="padding: 10px;">Vencimento</th>
-                                    <th style="padding: 10px;">Comissão (R$)</th>
-                                    <th style="padding: 10px;">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="installments-body"></tbody>
-                        </table>
-                    </div>
+                    <p class="section-title">Resumo das Parcelas</p>
+                    <div id="installments-grid" class="installments-grid"></div>
                 </div>
 
                 <div class="modal-footer"><button type="submit" class="btn btn-primary" style="width: 100%;">${isEditing ? 'Salvar Alterações' : 'Finalizar Pedido'}</button></div>
@@ -275,7 +318,7 @@ renderOrderForm(data = null, isEdit = false) {
         const instCount = document.getElementById('order-installments');
         const totalInput = document.getElementById('order-total');
         const instSection = document.getElementById('installments-section');
-        const instBody = document.getElementById('installments-body');
+        const instGrid = document.getElementById('installments-grid');
         const itemsBody = document.getElementById('items-body');
         const btnAddItem = document.getElementById('btn-add-item');
 
@@ -385,11 +428,13 @@ renderOrderForm(data = null, isEdit = false) {
 
         const renderInstallments = () => {
             const type = payType.value;
-            if (type === 'Boleto' || type === 'Cartão de Crédito') {
+            const count = parseInt(instCount.value) || 1;
+            console.log('DEBUG renderInstallments - type:', type, 'count:', count);
+            
+            if ((type === 'Boleto' || type === 'Cartão de Crédito') || count > 1) {
                 instSection.style.display = 'block';
-                const count = parseInt(instCount.value) || 1;
                 const total = parseFloat(totalInput.value) || 0;
-                const valPerInst = parseFloat((total / count).toFixed(2));
+                const valPerInst = total > 0 ? parseFloat((total / count).toFixed(2)) : 0;
 
                 if (installments.length !== count) {
                     // Regenera parcelas: usa data do pedido selecionada
@@ -417,37 +462,49 @@ renderOrderForm(data = null, isEdit = false) {
 
                 const taxaComissao = this.calculateOrderCommission(items, products);
 
-                instBody.innerHTML = installments.map((inst, idx) => {
+                instGrid.innerHTML = installments.map((inst, idx) => {
                     const comissao = (parseFloat(inst.valor) || 0) * (taxaComissao / 100);
+                    const isPago = inst.status === 'Pago' || inst.status === 'pago';
+                    
                     return `
-                    <tr>
-                        <td style="padding: 8px 10px; font-weight: 700;">${inst.numero}ª</td>
-                        <td style="padding: 8px 10px;"><input type="number" class="inst-val" data-idx="${idx}" value="${parseFloat(inst.valor) || 0}" style="padding: 4px 8px; font-size: 0.85rem;"></td>
-                        <td style="padding: 8px 10px;"><input type="date" class="inst-date" data-idx="${idx}" value="${inst.vencimento}" style="padding: 4px 8px; font-size: 0.85rem;"></td>
-                        <td style="padding: 8px 10px; font-weight: 600; color: #10b981;">R$ ${comissao.toFixed(2)}</td>
-                        <td style="padding: 8px 10px;">
-                            <button type="button" class="btn-inst-status ${inst.status === 'Pago' ? 'pago' : 'pendente'}" data-idx="${idx}">
-                                ${inst.status === 'Pago' ? '✓ Pago' : 'Pendente'}
-                            </button>
-                        </td>
-                    </tr>
+                    <div class="installment-card animate-fade">
+                        <div class="inst-header">
+                            <span>${inst.numero}ª PARCELA</span>
+                            <span class="inst-comissao">R$ ${comissao.toFixed(2)}</span>
+                        </div>
+                        <div class="inst-value">
+                            <input type="number" class="inst-val" data-idx="${idx}" value="${parseFloat(inst.valor) || 0}" 
+                                   style="width: 100%; border: none; padding: 2px 0; font-size: 1.1rem; font-weight: 700; background: transparent;">
+                        </div>
+                        <div class="inst-date">
+                            <label class="inst-date-label">VENCIMENTO</label>
+                            <input type="date" class="inst-date" data-idx="${idx}" value="${inst.vencimento}" 
+                                   style="width: 100%; border: none; padding: 2px 0; font-size: 0.85rem; background: transparent; color: var(--text-secondary);">
+                        </div>
+                        <button type="button" class="btn-status-pill ${isPago ? 'pago' : 'pendente'}" data-idx="${idx}">
+                            <i data-lucide="${isPago ? 'check-circle' : 'circle'}"></i>
+                            ${isPago ? 'Pago' : 'Pendente'}
+                        </button>
+                    </div>
                 `}).join('');
 
-// Bind de eventos das parcelas
-                document.querySelectorAll('.btn-inst-status').forEach(btn => {
+                lucide.createIcons();
+
+                // Bind de eventos das parcelas
+                instGrid.querySelectorAll('.btn-status-pill').forEach(btn => {
                     btn.addEventListener('click', () => {
                         const idx = btn.dataset.idx;
-                        installments[idx].status = installments[idx].status === 'Pago' ? 'Pendente' : 'Pago';
+                        installments[idx].status = (installments[idx].status === 'Pago' || installments[idx].status === 'pago') ? 'Pendente' : 'Pago';
                         renderInstallments();
                     });
                 });
-                document.querySelectorAll('.inst-val').forEach(input => {
+                instGrid.querySelectorAll('.inst-val').forEach(input => {
                     input.addEventListener('change', (e) => {
                         installments[e.target.dataset.idx].valor = parseFloat(e.target.value) || 0;
                         renderInstallments();
                     });
                 });
-                document.querySelectorAll('.inst-date').forEach(input => {
+                instGrid.querySelectorAll('.inst-date').forEach(input => {
                     input.addEventListener('change', (e) => installments[e.target.dataset.idx].vencimento = e.target.value);
                 });
             } else {
@@ -458,7 +515,7 @@ renderOrderForm(data = null, isEdit = false) {
         payType.addEventListener('change', renderInstallments);
         instCount.addEventListener('input', renderInstallments);
         totalInput.addEventListener('input', renderInstallments);
-        document.getElementById('order-date').addEventListener('change', renderInstallments);
+        document.getElementById('order-date')?.addEventListener('change', renderInstallments);
 
         // Inicializa se for edição ou se já houver dados
         renderItems();
