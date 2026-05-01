@@ -1102,10 +1102,10 @@ class App {
                                     <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
                                         <div style="font-size: 10px; font-weight: 600; color: var(--text-primary);">${hasData ? formatarBRL(totalValue) : ''}</div>
                                         <div style="width: 50%; margin: 0 auto; background: var(--bg-tertiary); border-radius: 4px 4px 0 0; height: 120px; display: flex; align-items: flex-end; gap: 2px; padding: 0 2px;">
-                                            <div style="flex: 1; background: #10b981; border-radius: 4px 4px 0 0; height: ${h15r}%;"></div>
-                                            <div style="flex: 1; background: #059669; border-radius: 4px 4px 0 0; height: ${h30r}%;"></div>
-                                            <div style="flex: 1; background: rgba(249,115,22,0.5); border-radius: 4px 4px 0 0; height: ${h15p}%;"></div>
-                                            <div style="flex: 1; background: rgba(234,88,12,0.5); border-radius: 4px 4px 0 0; height: ${h30p}%;"></div>
+                                            <div style="flex: 1; background: #10b981; border-radius: 4px 4px 0 0; height: ${h15r}%;" title="Recebido dia 15: ${formatarBRL(v15r)}"></div>
+                                            <div style="flex: 1; background: #059669; border-radius: 4px 4px 0 0; height: ${h30r}%;" title="Recebido dia 30: ${formatarBRL(v30r)}"></div>
+                                            <div style="flex: 1; background: rgba(249,115,22,0.5); border-radius: 4px 4px 0 0; height: ${h15p}%;" title="Projetado dia 15: ${formatarBRL(v15p)}"></div>
+                                            <div style="flex: 1; background: rgba(234,88,12,0.5); border-radius: 4px 4px 0 0; height: ${h30p}%;" title="Projetado dia 30: ${formatarBRL(v30p)}"></div>
                                         </div>
                                         <div style="font-size: 9px; color: var(--text-muted);">${mes}</div>
                                     </div>
