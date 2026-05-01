@@ -1009,8 +1009,6 @@ class App {
                 });
             }
         });
-        
-        console.log('[DEBUG] comissaoQuinzenal:', comissaoQuinzenal);
 
         return `
             <div class="view active">
