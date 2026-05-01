@@ -1342,10 +1342,12 @@ return `
         `;
     }
 
-    renderCommissions() {
+    renderCommissions(yearFilter = null) {
         const orders = store.getOrders() || [];
         const products = store.getProducts() || [];
-        const currentYear = new Date().getFullYear().toString();
+        
+        const selectedYearEl = document.getElementById('commFilterYear');
+        const currentYear = selectedYearEl ? selectedYearEl.value : new Date().getFullYear().toString();
         
         const availableYears = [...new Set(orders.map(o => {
             if (!o.data) return null;
@@ -1375,30 +1377,52 @@ return `
 
         filteredOrders.forEach(o => {
             const detalhes = Array.isArray(o.parcelas_detalhes) ? o.parcelas_detalhes : [];
-            const { totalComissao } = this.calculateCommissionForOrder(o, products);
+            const items = o.items || o.itens || [];
+            
+            let valorTotalPedido = parseFloat(o.valor_total) || 0;
+            if (valorTotalPedido === 0 && items.length > 0) {
+                valorTotalPedido = items.reduce((sum, item) => {
+                    return sum + ((parseFloat(item.quantidade) || 0) * (parseFloat(item.valorUnitario) || parseFloat(item.precoUnitario) || 0));
+                }, 0);
+            }
+
+            let taxaComissaoTotal = 0;
+            if (valorTotalPedido > 0) {
+                items.forEach(item => {
+                    const prod = products.find(p => p.id == (item.productId || item.product_id));
+                    const taxa = prod ? (parseFloat(prod.comissao) || 0) : 10;
+                    const valorItem = (parseFloat(item.quantidade) || 0) * (parseFloat(item.valorUnitario) || parseFloat(item.precoUnitario) || 0);
+                    taxaComissaoTotal += (valorItem * taxa / 100);
+                });
+            }
 
             detalhes.forEach(p => {
                 if (!p || !p.vencimento) return;
                 const valor = parseFloat(p.valor) || 0;
                 const vencimento = new Date(p.vencimento + 'T00:00:00');
                 const status = (p.status || '').toLowerCase();
-                const comissao = valor * (totalComissao / (o.valorTotal || 1));
+                
+                const comissao = valorTotalPedido > 0 ? (valor / valorTotalPedido) * taxaComissaoTotal : 0;
                 
                 const payday = this.getPaydayForDate(vencimento);
                 const paydayDate = new Date(payday.paydayYear, payday.paydayMonth, payday.payday);
                 
-                if (status === 'pago') {
-                    allInstallments.push({ valor, comissao, vencimento, payday: paydayDate });
-                    totalComissaoRecebida += comissao;
-                    totalParcelasRecebidas++;
-                }
+                const vencYear = vencimento.getFullYear().toString();
                 
-                allProjectedInstallments.push({ valor, comissao, vencimento, payday: paydayDate });
-                totalComissaoAReceber += comissao;
-                totalParcelasAReceber++;
-                
-                if (paydayDate.getTime() === nextPayday.date.getTime()) {
-                    comissaoProximoRecebimento += comissao;
+                if (vencYear === currentYear) {
+                    if (status === 'pago') {
+                        allInstallments.push({ valor, comissao, vencimento, payday: paydayDate });
+                        totalComissaoRecebida += comissao;
+                        totalParcelasRecebidas++;
+                    }
+                    
+                    allProjectedInstallments.push({ valor, comissao, vencimento, payday: paydayDate });
+                    totalComissaoAReceber += comissao;
+                    totalParcelasAReceber++;
+                    
+                    if (paydayDate.getTime() === nextPayday.date.getTime()) {
+                        comissaoProximoRecebimento += comissao;
+                    }
                 }
             });
         });
@@ -1435,10 +1459,10 @@ return `
         const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
         const cores = ['#2383e2', '#4daa57', '#cb912f', '#e03e3e', '#9b51e0', '#3d7fa8', '#5aabf8', '#ff8e6e', '#6b7280', '#059669', '#9333ea', '#14b8a6'];
         
-        allInstallments.forEach(inst => {
-            const payday = inst.payday;
-            if (payday.getFullYear() === yearNum && payday.getMonth() >= 0 && payday.getMonth() <= 11) {
-                monthlyCommission[payday.getMonth()] += inst.comissao;
+        allProjectedInstallments.forEach(inst => {
+            const vencimento = inst.vencimento;
+            if (vencimento.getFullYear() === yearNum && vencimento.getMonth() >= 0 && vencimento.getMonth() <= 11) {
+                monthlyCommission[vencimento.getMonth()] += inst.comissao;
             }
         });
         
@@ -1509,7 +1533,7 @@ return `
                                 const height = maxMonthlyCommission > 0 ? (valor / maxMonthlyCommission * 100) : 0;
                                 return `
                                     <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                                        <div style="font-size: 10px; font-weight: 600; color: var(--text-primary);">${(valor/1000).toFixed(1)}k</div>
+                                        <div style="font-size: 10px; font-weight: 600; color: var(--text-primary);">R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                                         <div style="width: 100%; background: var(--bg-tertiary); border-radius: 4px 4px 0 0; height: 120px; position: relative;">
                                             <div style="position: absolute; bottom: 0; left: 0; right: 0; background: ${cores[i]}; border-radius: 4px 4px 0 0; height: ${height}%;"></div>
                                         </div>
@@ -1717,7 +1741,11 @@ return `
     }
 
     updateCommissionsData(yearFilter) {
-        this.setupCommissionsView();
+        const main = document.querySelector('.main-content');
+        if (main) {
+            main.innerHTML = this.renderCommissions(yearFilter);
+            this.setupCommissionsView();
+        }
     }
 
     renderCropItem(crop) {
