@@ -310,104 +310,7 @@ export const dashboardView = {
                     <div class="kpi-card-body">
                         <div class="value" id="kpiVendasValue">R$ ${filteredTotalVendas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                     </div>
-                </div>
-                <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid var(--success);">
-                    <div class="kpi-card-header">
-                        <div class="label"><i data-lucide="check-circle" style="color: #06b6d4;"></i> COMISSÃO RECEBIDA</div>
-                        <select class="kpi-period-filter" data-kpi="comissao_recebida">
-                            <option value="ano">Ano</option>
-                            <option value="trimestre">Trimestre</option>
-                            <option value="mes">Mês</option>
-                            <option value="tudo">Tudo</option>
-                        </select>
-                    </div>
-                    <div class="kpi-card-body">
-                        <div class="value" id="kpiComissaoRecebidaValue">R$ ${totalComissaoRecebida.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                        <div class="sub-text">${totalParcelasRecebidas} parcela(s) paga(s)</div>
-                    </div>
-                </div>
-                <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid var(--info);">
-                    <div class="kpi-card-header">
-                        <div class="label"><i data-lucide="clock" style="color: #f97316;"></i> COMISSÃO A RECEBER</div>
-                        <select class="kpi-period-filter" data-kpi="comissao_a_receber">
-                            <option value="ano">Ano</option>
-                            <option value="trimestre">Trimestre</option>
-                            <option value="mes">Mês</option>
-                            <option value="tudo">Tudo</option>
-                        </select>
-                    </div>
-                    <div class="kpi-card-body">
-                        <div class="value" id="kpiComissaoAReceberValue">R$ ${totalComissaoAReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                        <div class="sub-text">${totalParcelasAReceber} parcela(s) aberta(s)</div>
-                    </div>
-                </div>
-                <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid #787774;">
-                    <div class="kpi-card-header">
-                        <div class="label"><i data-lucide="calendar-check" style="color: #8b5cf6;"></i> PRÓXIMO RECEBIMENTO</div>
-                    </div>
-                    <div class="kpi-card-body">
-                        <div class="value">Dia ${nextPayday.day}</div>
-                        <div class="sub-text">R$ ${comissaoProximoRecebimento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} em ${nextPayday.daysUntil} dia(s)</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="perf-grid-mid">
-                <div class="chart-card states-card">
-                    <h3>DIVISÃO DE VENDAS POR ESTADO (BRASIL)</h3>
-                    <div class="states-layout">
-                        <div class="states-table">
-                            <div class="state-header-row">
-                                <span>UF</span>
-                                <span style="text-align: center;">VOLUME</span>
-                                <span>R$</span>
-                                <span>%</span>
-                            </div>
-                            ${stateChartData.map((d, i) => `
-                                <div class="state-perf-row ${i === 0 ? 'highlight' : ''}">
-                                    <span class="state-label">${d.uf}</span>
-                                    <div class="state-bar-container"><div class="state-bar ${this.getStateColorClass(i)}" style="width: ${d.percent}%;"></div></div>
-                                    <span class="state-val">R$ ${d.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                                    <span class="state-pct">${d.percent}%</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div class="states-chart-wrapper">
-                            <div class="chart-title">Faturamento</div>
-                            <div class="chart-total">R$ ${filteredTotalVendas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                            <canvas id="chartPizzaEstados" style="max-height: 140px;"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="chart-card">
-                    <h3>VENDAS MENSAIS (VOLUME)</h3>
-                    <div class="chart-box"><canvas id="chartMensal"></canvas></div>
-                </div>
-            </div>
-
-            <div class="perf-grid-mid">
-                <div class="chart-card" style="grid-column: span 2;">
-                    <h3>PAGAMENTO DE COMISSÕES</h3>
-                    <div class="chart-box"><canvas id="chartComissoes"></canvas></div>
-                </div>
-            </div>
-
-            <div class="perf-grid-bottom">
-                <div class="chart-card">
-                    <h3>PROJEÇÃO DE RECEBIMENTO DE COMISSÃO</h3>
-                    <div class="projection-legend">
-                        <div class="legend-item">
-                            <div class="legend-dot recebido"></div>
-                            <span>Comissão Recebida</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-dot projetado"></div>
-                            <span>Comissão Projetada</span>
-                        </div>
-                    </div>
-                    <div class="chart-box"><canvas id="chartEvolucao"></canvas></div>
-                </div>
-            </div>
+</div>
         `;
 
         if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -554,42 +457,6 @@ export const dashboardView = {
                 type: 'bar',
                 data: { labels: ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'], datasets: [{ data: monthly, backgroundColor: 'rgba(35, 131, 226, 0.6)', borderRadius: 4 }] },
                 options: { ...config, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { x: { ticks: { color: '#787774', font: { size: 10 } }, grid: { display: false } }, y: { display: false } } }
-            });
-        }
-
-        const ctxC = document.getElementById('chartComissoes');
-        console.log('[DEBUG] chartComissoes ctx:', !!ctxC, 'labels:', projection?.labels?.length, 'received:', projection?.receivedData?.length, 'projected:', projection?.projectedData?.length);
-        if (ctxC && projection?.labels && projection?.receivedData && projection?.projectedData) {
-            const receivedData = projection.receivedData;
-            const projectedData = projection.projectedData;
-            
-            const data15 = receivedData.map((v, i) => i % 2 === 0 ? v : 0);
-            const data30 = receivedData.map((v, i) => i % 2 === 1 ? v : 0);
-            const proj15 = projectedData.map((v, i) => i % 2 === 0 ? v : 0);
-            const proj30 = projectedData.map((v, i) => i % 2 === 1 ? v : 0);
-
-            this.charts.com = new Chart(ctxC, {
-                type: 'bar',
-                data: {
-                    labels: projection.labels,
-                    datasets: [
-                        { label: 'Recebido 15', data: data15, backgroundColor: '#10b981', borderRadius: 3 },
-                        { label: 'Recebido 30', data: data30, backgroundColor: '#059669', borderRadius: 3 },
-                        { label: 'Projetado 15', data: proj15, backgroundColor: 'rgba(249, 115, 22, 0.5)', borderRadius: 3 },
-                        { label: 'Projetado 30', data: proj30, backgroundColor: 'rgba(234, 88, 12, 0.5)', borderRadius: 3 }
-                    ]
-                },
-                options: {
-                    ...config,
-                    plugins: {
-                        legend: { display: true, position: 'top', labels: { color: '#94a3b8', boxWidth: 12, padding: 15, font: { size: 10 } } },
-                        datalabels: { display: false }
-                    },
-                    scales: {
-                        x: { ticks: { color: '#787774', font: { size: 10 } }, grid: { display: false } },
-                        y: { ticks: { color: '#787774', font: { size: 10 }, callback: (v) => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 0 }) }, grid: { color: 'rgba(255,255,255,0.05)' } }
-                    }
-                }
             });
         }
 

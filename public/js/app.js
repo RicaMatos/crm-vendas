@@ -795,6 +795,10 @@ class App {
                 main.innerHTML = this.renderCrops();
                 this.setupCropsView();
                 break;
+            case 'commissions':
+                main.innerHTML = this.renderCommissions();
+                this.setupCommissionsView();
+                break;
             case 'tasks':
                 main.innerHTML = this.renderTasks();
                 this.setupTasksView();
@@ -818,6 +822,8 @@ class App {
                 break;
             case 'crops':
                 this.showCropModal();
+                break;
+            case 'commissions':
                 break;
             case 'tasks':
                 this.showTaskModal();
@@ -939,80 +945,7 @@ class App {
         const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
         const cores = ['#2383e2', '#4daa57', '#cb912f', '#e03e3e', '#9b51e0', '#3d7fa8', '#5aabf8', '#ff8e6e', '#6b7280', '#059669'];
 
-        // Calculo das comissões quinzenais
-        const comissaoQuinzenal = { received15: [], received30: [], projected15: [], projected30: [] };
-        const currentYear = new Date().getFullYear();
-        
-        orders.forEach(order => {
-            let detalhes = order.parcelas_detalhes;
-            if (typeof detalhes === 'string') {
-                try { detalhes = JSON.parse(detalhes); } catch(e) { detalhes = []; }
-            }
-            detalhes = detalhes || [];
-            
-            if (detalhes.length > 0) {
-                const items = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
-                let valorTotal = parseFloat(order.valor_total) || 0;
-                if (valorTotal === 0 && Array.isArray(items)) {
-                    valorTotal = items.reduce((s, i) => s + ((parseFloat(i.quantidade) || 0) * (parseFloat(i.valorUnitario) || parseFloat(i.precoUnitario) || 0)), 0);
-                }
-                const comissaoTotal = items.reduce((s, i) => {
-                    const prod = products.find(p => p.id == (i.productId || i.product_id));
-                    const pct = prod ? (parseFloat(prod.comissao) || 10) : 10;
-                    const val = (parseFloat(i.quantidade) || 0) * (parseFloat(i.valorUnitario) || parseFloat(i.precoUnitario) || 0);
-                    return s + (val * pct / 100);
-                }, 0);
-                const ratio = valorTotal > 0 ? comissaoTotal / valorTotal : 0;
-                
-                detalhes.forEach(p => {
-                    // Tratamento mais robusto do valor
-                    let valor = 0;
-                    if (p.valor !== undefined && p.valor !== null) {
-                        valor = typeof p.valor === 'number' ? p.valor : parseFloat(String(p.valor).replace('R$ ', '').replace(/\./g, '').replace(',', '.')) || 0;
-                    }
-                    const comissao = valor * ratio;
-                    const status = (p.status || '').toLowerCase();
-                    if (!p.vencimento) return;
-                    
-                    // Parse da data do vencimento sem problema de timezone
-                    const vencParts = p.vencimento.split('-');
-                    const vencYear = parseInt(vencParts[0]);
-                    const vencMonth = parseInt(vencParts[1]) - 1;
-                    const vencDay = parseInt(vencParts[2]);
-                    
-                    // Calcular payday e mês de pagamento
-                    let paydayDay, paydayMonth, paydayYear;
-                    if (vencDay <= 12) {
-                        paydayDay = 15;
-                        paydayMonth = vencMonth;
-                        paydayYear = vencYear;
-                    } else if (vencDay <= 27) {
-                        paydayDay = 30;
-                        paydayMonth = vencMonth;
-                        paydayYear = vencYear;
-                    } else {
-                        paydayDay = 15;
-                        paydayMonth = vencMonth + 1;
-                        paydayYear = vencYear;
-                        if (paydayMonth > 11) { paydayMonth = 0; paydayYear += 1; }
-                    }
-                    
-                    if (paydayYear !== currentYear) return;
-                    
-                    // Recebido = apenas status pago
-                    if (status === 'pago' || status === 'Pago') {
-                        if (paydayDay === 15) comissaoQuinzenal.received15[paydayMonth] = (comissaoQuinzenal.received15[paydayMonth] || 0) + comissao;
-                        else comissaoQuinzenal.received30[paydayMonth] = (comissaoQuinzenal.received30[paydayMonth] || 0) + comissao;
-                    }
-                    
-                    // Projetado = pago + pendente (todos os status)
-                    if (paydayDay === 15) comissaoQuinzenal.projected15[paydayMonth] = (comissaoQuinzenal.projected15[paydayMonth] || 0) + comissao;
-                    else comissaoQuinzenal.projected30[paydayMonth] = (comissaoQuinzenal.projected30[paydayMonth] || 0) + comissao;
-                });
-            }
-        });
-
-        return `
+return `
             <div class="view active">
                 <div class="view-header">
                     <h1 class="view-title">Dashboard</h1>
@@ -1097,49 +1030,7 @@ class App {
                                 </div>
                             </div>
                         ` : '<p style="color: var(--text-muted); text-align: center;">Nenhuma venda</p>'}
-                    </div>
-                </div>
-
-                <!-- Gráfico de Comissões Quinzenais -->
-                <div class="card" style="padding: 20px; margin-bottom: 24px;">
-                    <div class="card-header" style="margin-bottom: 16px;">
-                        <h3 class="card-title">Pagamento de Comissões</h3>
-                    </div>
-                    <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <div style="display: flex; gap: 12px; font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
-                            <span style="display: flex; align-items: center; gap: 4px;"><div style="width: 10px; height: 10px; background: #10b981; border-radius: 2px;"></div> Recebido 15</span>
-                            <span style="display: flex; align-items: center; gap: 4px;"><div style="width: 10px; height: 10px; background: #059669; border-radius: 2px;"></div> Recebido 30</span>
-                            <span style="display: flex; align-items: center; gap: 4px;"><div style="width: 10px; height: 10px; background: rgba(249,115,22,0.5); border-radius: 2px;"></div> Projetado 15</span>
-                            <span style="display: flex; align-items: center; gap: 4px;"><div style="width: 10px; height: 10px; background: rgba(234,88,12,0.5); border-radius: 2px;"></div> Projetado 30</span>
-                        </div>
-                        <div style="height: 180px; display: flex; align-items: flex-end; gap: 6px; padding: 0 4px;">
-                            ${meses.map((mes, i) => {
-                                const v15r = comissaoQuinzenal.received15[i] || 0;
-                                const v30r = comissaoQuinzenal.received30[i] || 0;
-                                const v15p = comissaoQuinzenal.projected15[i] || 0;
-                                const v30p = comissaoQuinzenal.projected30[i] || 0;
-                                const maxVal = Math.max(v15r, v30r, v15p, v30p, 1);
-                                const h15r = (v15r / maxVal * 100);
-                                const h30r = (v30r / maxVal * 100);
-                                const h15p = (v15p / maxVal * 100);
-                                const h30p = (v30p / maxVal * 100);
-                                const hasData = v15r + v30r + v15p + v30p > 0;
-const totalValue = v15r + v30r + v15p + v30p;
-                                return `
-                                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                                        <div style="font-size: 10px; font-weight: 600; color: var(--text-primary);">${hasData ? formatarBRL(totalValue) : ''}</div>
-                                        <div style="width: 80%; background: var(--bg-tertiary); border-radius: 4px 4px 0 0; height: 120px; display: flex; align-items: flex-end; gap: 1px; padding: 0 1px;">
-                                            <div style="flex: 1; background: #10b981; border-radius: 4px 4px 0 0; min-height: 1px; height: ${h15r}%;" title="Recebido dia 15: ${formatarBRL(v15r)}"></div>
-                                            <div style="flex: 1; background: #059669; border-radius: 4px 4px 0 0; min-height: 1px; height: ${h30r}%;" title="Recebido dia 30: ${formatarBRL(v30r)}"></div>
-                                            <div style="flex: 1; background: rgba(249,115,22,0.5); border-radius: 4px 4px 0 0; min-height: 1px; height: ${h15p}%;" title="Projetado dia 15: ${formatarBRL(v15p)}"></div>
-                                            <div style="flex: 1; background: rgba(234,88,12,0.5); border-radius: 4px 4px 0 0; min-height: 1px; height: ${h30p}%;" title="Projetado dia 30: ${formatarBRL(v30p)}"></div>
-                                        </div>
-                                        <div style="font-size: 9px; color: var(--text-muted);">${mes}</div>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                    </div>
+</div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
@@ -1449,6 +1340,384 @@ const totalValue = v15r + v30r + v15p + v30p;
                 </div>
             </div>
         `;
+    }
+
+    renderCommissions() {
+        const orders = store.getOrders() || [];
+        const products = store.getProducts() || [];
+        const currentYear = new Date().getFullYear().toString();
+        
+        const availableYears = [...new Set(orders.map(o => {
+            if (!o.data) return null;
+            const d = new Date(o.data);
+            return isNaN(d.getTime()) ? null : d.getFullYear().toString();
+        }).filter(y => y))];
+        
+        if (!availableYears.includes(currentYear)) availableYears.push(currentYear);
+        availableYears.sort((a,b) => b - a);
+        
+        const yearNum = parseInt(currentYear);
+        const nextPayday = this.getNextPayday();
+        
+        let totalComissaoRecebida = 0;
+        let totalComissaoAReceber = 0;
+        let totalParcelasRecebidas = 0;
+        let totalParcelasAReceber = 0;
+        let comissaoProximoRecebimento = 0;
+
+        const allInstallments = [];
+        const allProjectedInstallments = [];
+
+        const filteredOrders = orders.filter(o => {
+            if (!o.data) return false;
+            return new Date(o.data).getFullYear().toString() === currentYear;
+        });
+
+        filteredOrders.forEach(o => {
+            const detalhes = Array.isArray(o.parcelas_detalhes) ? o.parcelas_detalhes : [];
+            const { totalComissao } = this.calculateCommissionForOrder(o, products);
+
+            detalhes.forEach(p => {
+                if (!p || !p.vencimento) return;
+                const valor = parseFloat(p.valor) || 0;
+                const vencimento = new Date(p.vencimento + 'T00:00:00');
+                const status = (p.status || '').toLowerCase();
+                const comissao = valor * (totalComissao / (o.valorTotal || 1));
+                
+                const payday = this.getPaydayForDate(vencimento);
+                const paydayDate = new Date(payday.paydayYear, payday.paydayMonth, payday.payday);
+                
+                if (status === 'pago') {
+                    allInstallments.push({ valor, comissao, vencimento, payday: paydayDate });
+                    totalComissaoRecebida += comissao;
+                    totalParcelasRecebidas++;
+                }
+                
+                allProjectedInstallments.push({ valor, comissao, vencimento, payday: paydayDate });
+                totalComissaoAReceber += comissao;
+                totalParcelasAReceber++;
+                
+                if (paydayDate.getTime() === nextPayday.date.getTime()) {
+                    comissaoProximoRecebimento += comissao;
+                }
+            });
+        });
+
+        const projectionLabels = [];
+        for (let m = 0; m < 12; m++) {
+            const d = new Date(yearNum, m, 1);
+            let monthName = d.toLocaleString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase();
+            projectionLabels.push(`${monthName} 15`, `${monthName} 30`);
+        }
+
+        const receivedData = new Array(24).fill(0);
+        const projectedData = new Array(24).fill(0);
+        
+        allInstallments.forEach(inst => {
+            const payday = inst.payday;
+            if (payday.getFullYear() === yearNum && payday.getMonth() >= 0 && payday.getMonth() <= 11) {
+                const is15 = payday.getDate() === 15;
+                const idx = payday.getMonth() * 2 + (is15 ? 0 : 1);
+                receivedData[idx] += inst.comissao;
+            }
+        });
+        
+        allProjectedInstallments.forEach(inst => {
+            const payday = inst.payday;
+            if (payday.getFullYear() === yearNum && payday.getMonth() >= 0 && payday.getMonth() <= 11) {
+                const is15 = payday.getDate() === 15;
+                const idx = payday.getMonth() * 2 + (is15 ? 0 : 1);
+                projectedData[idx] += inst.comissao;
+            }
+        });
+
+        const monthlyCommission = new Array(12).fill(0);
+        const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        const cores = ['#2383e2', '#4daa57', '#cb912f', '#e03e3e', '#9b51e0', '#3d7fa8', '#5aabf8', '#ff8e6e', '#6b7280', '#059669', '#9333ea', '#14b8a6'];
+        
+        allInstallments.forEach(inst => {
+            const payday = inst.payday;
+            if (payday.getFullYear() === yearNum && payday.getMonth() >= 0 && payday.getMonth() <= 11) {
+                monthlyCommission[payday.getMonth()] += inst.comissao;
+            }
+        });
+        
+        const maxMonthlyCommission = Math.max(...monthlyCommission, 1);
+        const avgMonthlyCommission = monthlyCommission.reduce((a, b) => a + b, 0) / 12;
+
+        return `
+            <div class="view active">
+                <div class="view-header">
+                    <h1 class="view-title">Comissões</h1>
+                    <select id="commFilterYear" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 6px; font-size: 0.85rem;">
+                        ${availableYears.map(y => `<option value="${y}">${y}</option>`).join('')}
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px;">
+                    <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid var(--success);">
+                        <div class="kpi-card-header">
+                            <div class="label"><i data-lucide="check-circle" style="color: #10b981;"></i> COMISSÃO RECEBIDA</div>
+                        </div>
+                        <div class="kpi-card-body">
+                            <div class="value">R$ ${totalComissaoRecebida.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid var(--success);">
+                        <div class="kpi-card-header">
+                            <div class="label"><i data-lucide="trending-up" style="color: #10b981;"></i> MÉDIA MENSAL</div>
+                        </div>
+                        <div class="kpi-card-body">
+                            <div class="value">R$ ${avgMonthlyCommission.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid var(--info);">
+                        <div class="kpi-card-header">
+                            <div class="label"><i data-lucide="clock" style="color: #f97316;"></i> COMISSÃO A RECEBER</div>
+                        </div>
+                        <div class="kpi-card-body">
+                            <div class="value">R$ ${totalComissaoAReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid #787774;">
+                        <div class="kpi-card-header">
+                            <div class="label"><i data-lucide="calendar-check" style="color: #8b5cf6;"></i> PRÓXIMO REC. DIA 15</div>
+                        </div>
+                        <div class="kpi-card-body">
+                            <div class="value">Dia 15</div>
+                            <div class="sub-text">${nextPayday.day === 15 ? 'Hoje' : 'R$ ' + comissaoProximoRecebimento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid #787774;">
+                        <div class="kpi-card-header">
+                            <div class="label"><i data-lucide="calendar-check" style="color: #8b5cf6;"></i> PRÓXIMO REC. DIA 30</div>
+                        </div>
+                        <div class="kpi-card-body">
+                            <div class="value">Dia 30</div>
+                            <div class="sub-text">R$ ${comissaoProximoRecebimento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 24px;">
+                    <div class="card" style="padding: 20px;">
+                        <div class="card-header" style="margin-bottom: 20px;">
+                            <h3 class="card-title">VALOR MENSAL DE COMISSÃO</h3>
+                        </div>
+                        <div style="height: 180px; display: flex; align-items: flex-end; gap: 6px; padding: 0 4px;">
+                            ${monthlyCommission.map((valor, i) => {
+                                const height = maxMonthlyCommission > 0 ? (valor / maxMonthlyCommission * 100) : 0;
+                                return `
+                                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                                        <div style="font-size: 10px; font-weight: 600; color: var(--text-primary);">${(valor/1000).toFixed(1)}k</div>
+                                        <div style="width: 100%; background: var(--bg-tertiary); border-radius: 4px 4px 0 0; height: 120px; position: relative;">
+                                            <div style="position: absolute; bottom: 0; left: 0; right: 0; background: ${cores[i]}; border-radius: 4px 4px 0 0; height: ${height}%;"></div>
+                                        </div>
+                                        <div style="font-size: 9px; color: var(--text-muted);">${meses[i]}</div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    calculateCommissionForOrder(order, products) {
+        const orderItems = order.items || order.itens || [];
+        let totalComissao = 0;
+        let totalValor = 0;
+        
+        orderItems.forEach(item => {
+            const prod = products.find(p => p.id == item.productId);
+            const comissaoProd = prod ? (parseFloat(prod.comissao) || 0) : 0;
+            const preco = parseFloat(item.valorUnitario) || 0;
+            const qtd = parseInt(item.quantidade) || 0;
+            const subtotal = preco * qtd;
+            
+            totalComissao += (subtotal * comissaoProd / 100);
+            totalValor += subtotal;
+        });
+        
+        return { totalComissao, totalValor };
+    }
+
+    getNextPayday() {
+        const today = new Date();
+        const day = today.getDate();
+        const month = today.getMonth();
+        const year = today.getFullYear();
+        
+        let nextDay, nextMonth, nextYear, daysUntil;
+        
+        if (day <= 12) {
+            nextDay = 15;
+            nextMonth = month;
+            nextYear = year;
+            daysUntil = 15 - day;
+        } else if (day <= 26) {
+            nextDay = 30;
+            nextMonth = month;
+            nextYear = year;
+            daysUntil = 30 - day;
+        } else {
+            nextDay = 15;
+            nextMonth = month + 1;
+            nextYear = year;
+            if (nextMonth > 11) { nextMonth = 0; nextYear += 1; }
+            const daysInMonth = new Date(nextYear, nextMonth, 0).getDate();
+            daysUntil = daysInMonth - day + 15;
+        }
+        
+        return {
+            date: new Date(nextYear, nextMonth, nextDay),
+            day: nextDay,
+            month: new Date(nextYear, nextMonth, 1).toLocaleString('pt-BR', { month: 'short' }).replace('.', ''),
+            daysUntil
+        };
+    }
+
+    getPaydayForDate(vencimento) {
+        const day = vencimento.getDate();
+        let payday, paydayMonth, paydayYear;
+        
+        if (day <= 12) {
+            payday = 15;
+            paydayMonth = vencimento.getMonth();
+            paydayYear = vencimento.getFullYear();
+        } else if (day <= 27) {
+            payday = 30;
+            paydayMonth = vencimento.getMonth();
+            paydayYear = vencimento.getFullYear();
+        } else {
+            payday = 15;
+            paydayMonth = vencimento.getMonth() + 1;
+            paydayYear = vencimento.getFullYear();
+            if (paydayMonth > 11) { paydayMonth = 0; paydayYear += 1; }
+        }
+        
+        return { payday, paydayMonth, paydayYear };
+    }
+
+    setupCommissionsView() {
+        const orders = store.getOrders() || [];
+        const products = store.getProducts() || [];
+        const yearFilter = document.getElementById('commFilterYear')?.value || new Date().getFullYear().toString();
+        const yearNum = parseInt(yearFilter);
+        
+        const allInstallments = [];
+        const allProjectedInstallments = [];
+        
+        const filteredOrders = orders.filter(o => {
+            if (!o.data) return false;
+            return new Date(o.data).getFullYear().toString() === yearFilter;
+        });
+
+        filteredOrders.forEach(o => {
+            const detalhes = Array.isArray(o.parcelas_detalhes) ? o.parcelas_detalhes : [];
+            const { totalComissao } = this.calculateCommissionForOrder(o, products);
+
+            detalhes.forEach(p => {
+                if (!p || !p.vencimento) return;
+                const valor = parseFloat(p.valor) || 0;
+                const status = (p.status || '').toLowerCase();
+                const comissao = valor * (totalComissao / (o.valorTotal || 1));
+                const vencimento = new Date(p.vencimento + 'T00:00:00');
+                const payday = this.getPaydayForDate(vencimento);
+                const paydayDate = new Date(payday.paydayYear, payday.paydayMonth, payday.payday);
+                
+                if (status === 'pago') {
+                    allInstallments.push({ comissao, payday: paydayDate });
+                }
+                allProjectedInstallments.push({ comissao, payday: paydayDate });
+            });
+        });
+
+        const projectionLabels = [];
+        for (let m = 0; m < 12; m++) {
+            const d = new Date(yearNum, m, 1);
+            let monthName = d.toLocaleString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase();
+            projectionLabels.push(`${monthName} 15`, `${monthName} 30`);
+        }
+
+        const receivedData = new Array(24).fill(0);
+        const projectedData = new Array(24).fill(0);
+        
+        allInstallments.forEach(inst => {
+            const payday = inst.payday;
+            if (payday.getFullYear() === yearNum && payday.getMonth() >= 0 && payday.getMonth() <= 11) {
+                const is15 = payday.getDate() === 15;
+                const idx = payday.getMonth() * 2 + (is15 ? 0 : 1);
+                receivedData[idx] += inst.comissao;
+            }
+        });
+        
+        allProjectedInstallments.forEach(inst => {
+            const payday = inst.payday;
+            if (payday.getFullYear() === yearNum && payday.getMonth() >= 0 && payday.getMonth() <= 11) {
+                const is15 = payday.getDate() === 15;
+                const idx = payday.getMonth() * 2 + (is15 ? 0 : 1);
+                projectedData[idx] += inst.comissao;
+            }
+        });
+
+        this._commissionReceivedData = receivedData;
+        this._commissionProjectedData = projectedData;
+        this._commissionLabels = projectionLabels;
+        
+        setTimeout(() => {
+            this.initCommissionsCharts();
+        }, 100);
+        
+        document.getElementById('commFilterYear')?.addEventListener('change', (e) => {
+            this.updateCommissionsData(e.target.value);
+        });
+    }
+
+    initCommissionsCharts() {
+        if (typeof Chart === 'undefined') return;
+        
+        const receivedData = this._commissionReceivedData || [];
+        const projectedData = this._commissionProjectedData || [];
+        const labels = this._commissionLabels || [];
+        
+        const ctxC = document.getElementById('chartComissoes');
+        if (!ctxC || labels.length === 0) return;
+        
+        const data15 = receivedData.map((v, i) => i % 2 === 0 ? v : 0);
+        const data30 = receivedData.map((v, i) => i % 2 === 1 ? v : 0);
+        const proj15 = projectedData.map((v, i) => i % 2 === 0 ? v : 0);
+        const proj30 = projectedData.map((v, i) => i % 2 === 1 ? v : 0);
+
+        new Chart(ctxC, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Recebido 15', data: data15, backgroundColor: '#10b981', borderRadius: 3 },
+                    { label: 'Recebido 30', data: data30, backgroundColor: '#059669', borderRadius: 3 },
+                    { label: 'Projetado 15', data: proj15, backgroundColor: 'rgba(249, 115, 22, 0.5)', borderRadius: 3 },
+                    { label: 'Projetado 30', data: proj30, backgroundColor: 'rgba(234, 88, 12, 0.5)', borderRadius: 3 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'top', labels: { color: '#94a3b8', boxWidth: 12, padding: 15, font: { size: 10 } } },
+                    datalabels: { display: false }
+                },
+                scales: {
+                    x: { ticks: { color: '#787774', font: { size: 10 } }, grid: { display: false } },
+                    y: { ticks: { color: '#787774', font: { size: 10 }, callback: (v) => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 0 }) }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                }
+            }
+        });
+    }
+
+    updateCommissionsData(yearFilter) {
+        this.setupCommissionsView();
     }
 
     renderCropItem(crop) {

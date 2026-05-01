@@ -7,6 +7,7 @@ import { ordersView } from './views/orders.js';
 import { cropsView } from './views/crops.js';
 import { tasksView } from './views/tasks.js';
 import { settingsView } from './views/settings.js';
+import { commissionsView } from './views/commissions.js';
 
 /* 
    Interface do Usuário (UI) 
@@ -341,8 +342,18 @@ class UIService {
                         <h2>CRM Senior</h2>
                     </div>
                     <nav class="sidebar-nav">
-                        <a href="#" class="nav-item active" data-view="home">
-                            <i data-lucide="home"></i> Dashboard
+<a href="#" class="nav-item active" data-view="home">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                                <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                            </svg>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="#" class="nav-item" data-view="commissions">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/>
+                            </svg>
+                            <span>Comissões</span>
                         </a>
                         <a href="#" class="nav-item" data-view="customers">
                             <i data-lucide="users"></i> Clientes
@@ -356,8 +367,17 @@ class UIService {
                         <a href="#" class="nav-item" data-view="tasks">
                             <i data-lucide="calendar"></i> Agenda
                         </a>
-                        <a href="#" class="nav-item" data-view="crops">
-                            <i data-lucide="leaf"></i> Cultivos
+<a href="#" class="nav-item" data-view="crops">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M7 20h10M12 4v16M5 9l7-5 7 5M5 15l7-5 7 5"/>
+                            </svg>
+                            <span>Tipos de Cultura</span>
+                        </a>
+                        <a href="#" class="nav-item" data-view="tasks">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                            </svg>
+                            <span>Tarefas</span>
                         </a>
                         ${auth.isAdmin() ? `
                         <a href="#" class="nav-item" data-view="users">
@@ -433,11 +453,16 @@ class UIService {
         
         // Ajustar botão da topbar dependendo da view
         if (topbarBtn) {
-            if (view === 'products') topbarBtn.innerHTML = '<i data-lucide="plus"></i> Novo Produto';
-            else if (view === 'customers') topbarBtn.innerHTML = '<i data-lucide="plus"></i> Novo Cliente';
-            else if (view === 'crops') topbarBtn.innerHTML = '<i data-lucide="plus"></i> Novo Tipo';
-            else if (view === 'tasks') topbarBtn.innerHTML = '<i data-lucide="plus"></i> Nova Tarefa';
-            else topbarBtn.innerHTML = '<i data-lucide="plus"></i> Novo Pedido';
+            if (view === 'commissions') {
+                topbarBtn.style.display = 'none';
+            } else {
+                topbarBtn.style.display = '';
+                if (view === 'products') topbarBtn.innerHTML = '<i data-lucide="plus"></i> Novo Produto';
+                else if (view === 'customers') topbarBtn.innerHTML = '<i data-lucide="plus"></i> Novo Cliente';
+                else if (view === 'crops') topbarBtn.innerHTML = '<i data-lucide="plus"></i> Novo Tipo';
+                else if (view === 'tasks') topbarBtn.innerHTML = '<i data-lucide="plus"></i> Nova Tarefa';
+                else topbarBtn.innerHTML = '<i data-lucide="plus"></i> Novo Pedido';
+            }
             lucide.createIcons();
         }
 
@@ -466,6 +491,10 @@ class UIService {
                 viewTitle.innerText = 'Gestão de Cultivos';
                 this.renderCrops(contentArea);
                 break;
+            case 'commissions':
+                viewTitle.innerText = 'Comissões';
+                this.renderCommissions(contentArea);
+                break;
             case 'users':
                 viewTitle.innerText = 'Gerenciamento de Usuários';
                 this.renderSettings(contentArea);
@@ -482,5 +511,5 @@ default:
 
 export const ui = new UIService();
 
-Object.assign(ui, dashboardView, customersView, productsView, ordersView, cropsView, tasksView, settingsView);
+Object.assign(ui, dashboardView, customersView, productsView, ordersView, cropsView, tasksView, settingsView, commissionsView);
 window.ui = ui;
