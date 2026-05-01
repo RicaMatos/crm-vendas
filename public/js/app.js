@@ -70,6 +70,20 @@ function isValidCNPJ(cnpj) {
     return digit1 === parseInt(cnpj[12]) && digit2 === parseInt(cnpj[13]);
 }
 
+// ============================================
+// UTILITÁRIOS DE FORMATAÇÃO
+// ============================================
+
+function formatarBRL(valor) {
+    const num = parseFloat(valor) || 0;
+    return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function formatarNumero(valor) {
+    const num = parseFloat(valor) || 0;
+    return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 // URLs do Supabase (do objeto global supabase)
 const SUPABASE_URL = window.supabase?.url || 'https://zgtakbznmuxkibxybdky.supabase.co';
 const SUPABASE_ANON_KEY = window.supabase?.key || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOilzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NTYwODIsImV4cCI6MjA5MjQzMjA4Mn0.oifEbE6EflNcBdKk_AmYbHm0g5y1Q5MNfrn89UkkiDQ';
@@ -935,19 +949,19 @@ class App {
                 <div class="stats-grid" style="margin-bottom: 24px;">
                     <div class="stat-card orange">
                         <div class="stat-label">Valor Total Vendas</div>
-                        <div class="stat-value">R$ ${totalSales.toFixed(2).replace('.', ',')}</div>
+                        <div class="stat-value">${formatarBRL(totalSales)}</div>
                     </div>
                     <div class="stat-card blue">
                         <div class="stat-label">Média Vendas/Mês</div>
-                        <div class="stat-value">R$ ${avgSales.toFixed(2).replace('.', ',')}</div>
+                        <div class="stat-value">${formatarBRL(avgSales)}</div>
                     </div>
                     <div class="stat-card green">
                         <div class="stat-label">Comissão Total</div>
-                        <div class="stat-value">R$ ${totalCommission.toFixed(2).replace('.', ',')}</div>
+                        <div class="stat-value">${formatarBRL(totalCommission)}</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Comissão Média</div>
-                        <div class="stat-value">R$ ${avgCommission.toFixed(2).replace('.', ',')}</div>
+                        <div class="stat-value">${formatarBRL(avgCommission)}</div>
                     </div>
                 </div>
 
@@ -1058,7 +1072,7 @@ class App {
                                 return `
                                 <div class="list-item" data-id="${order.id}">
                                     <div class="list-item-content">
-                                        <div class="list-item-title">${order.numero_pedido || '#'+order.id} <span style="color: var(--success); font-weight: 700; margin-left: 8px;">R$ ${val.toFixed(2).replace('.', ',')}</span></div>
+                                        <div class="list-item-title">${order.numero_pedido || '#'+order.id} <span style="color: var(--success); font-weight: 700; margin-left: 8px;">${formatarBRL(val)}</span></div>
                                         <div class="list-item-subtitle">${order.customers?.nome || 'Cliente'}</div>
                                     </div>
                                 </div>
@@ -1121,6 +1135,11 @@ class App {
                 <div class="list-item-meta">
                     <span class="badge badge-${statusClass}">${customer.status}</span>
                 </div>
+                <button class="btn-delete" onclick="app.deleteCustomer(${customer.id}, event)" title="Excluir">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                    </svg>
+                </button>
             </div>
         `;
     }
@@ -1151,30 +1170,48 @@ class App {
 
     renderOrderItem(order) {
         let calculatedTotal = parseFloat(order.valor_total || 0);
+        let paidCount = 0;
+        let totalCount = parseInt(order.parcelas || 1);
+        let parcelasDetalhes = [];
+        
         try {
             const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
             if (Array.isArray(items) && items.length > 0) {
                 calculatedTotal = items.reduce((sum, item) => sum + ((item.quantidade || 0) * (item.valorUnitario || item.precoUnitario || 0)), 0);
             }
+            
+            parcelasDetalhes = typeof order.parcelas_detalhes === 'string' ? JSON.parse(order.parcelas_detalhes) : (order.parcelas_detalhes || []);
+            paidCount = parcelasDetalhes.filter(p => p.status === 'pago' || p.status === 'Pago').length;
         } catch (e) {}
 
         const dataPedido = order.data ? new Date(order.data).toLocaleDateString('pt-BR') : '';
         const tipoPagamento = order.tipo_pagamento === 'avista' ? 'À Vista' : 'Parcelado';
-        const parcelas = order.parcelas || 1;
+        
+        // Calcula status real
+        let statusReal = order.status_pagamento || 'pendente';
+        if (order.tipo_pagamento === 'avista') {
+            statusReal = 'pago';
+        } else if (parcelasDetalhes.length > 0) {
+            const todasPagas = parcelasDetalhes.every(p => p.status === 'pago' || p.status === 'Pago');
+            statusReal = todasPagas ? 'pago' : 'pendente';
+        }
+
+        const infoParcelas = (order.tipo_pagamento !== 'avista' && order.tipo_pagamento !== 'recebimento' && totalCount > 1) ? `<span class="badge badge-info" style="text-transform: uppercase;">${paidCount} parcela${paidCount !== 1 ? 's' : ''} paga${paidCount !== 1 ? 's' : ''} de ${totalCount}</span>` : '';
         
         return `
             <div class="list-item" data-id="${order.id}">
                 <div class="list-item-content">
-                    <div class="list-item-title">${order.numero_pedido || 'Pedido #' + order.id} <span style="color: var(--success); font-weight: 700; margin-left: 8px;">R$ ${calculatedTotal.toFixed(2).replace('.', ',')}</span></div>
+                    <div class="list-item-title">${order.numero_pedido || 'Pedido #' + order.id} <span style="color: var(--success); font-weight: 700; margin-left: 8px;">${formatarBRL(calculatedTotal)}</span></div>
                     <div class="list-item-subtitle">${order.customers?.nome || 'Cliente'}</div>
                     <div class="list-item-badges">
                         <span class="badge badge-info">${dataPedido}</span>
                         <span class="badge badge-info">${tipoPagamento}</span>
-                        <span class="badge badge-info">${parcelas}x</span>
+                        <span class="badge badge-info">${totalCount}x</span>
+                        ${infoParcelas}
                     </div>
                 </div>
                 <div class="list-item-meta">
-                    <span class="badge badge-${order.status_pagamento}">${order.status_pagamento}</span>
+                    <span class="badge badge-${statusReal}" style="text-transform: uppercase;">${statusReal}</span>
                 </div>
                 <button class="btn-delete" onclick="app.deleteOrder(${order.id}, event)" title="Excluir">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1257,7 +1294,7 @@ class App {
                                             <div style="flex: 1; min-width: 0;">
                                                 <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
                                                     <span style="font-size: 14px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">${data.name}</span>
-                                                    <span style="font-size: 14px; font-weight: 700; color: var(--success);">R$ ${data.valor.toFixed(2).replace('.', ',')}</span>
+                                                    <span style="font-size: 14px; font-weight: 700; color: var(--success);">${formatarBRL(data.valor)}</span>
                                                 </div>
                                                 <div style="height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden;">
                                                     <div style="height: 100%; width: ${percentage}%; background: linear-gradient(90deg, ${cor} 0%, ${cor}cc 100%); border-radius: 4px; transition: width 0.5s ease;"></div>
@@ -1311,6 +1348,11 @@ class App {
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                     </svg>
                 </div>
+                <button class="btn-delete" onclick="app.deleteCrop(${crop.id}, event)" title="Excluir">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                    </svg>
+                </button>
             </div>
         `;
     }
@@ -1325,6 +1367,11 @@ class App {
                 <div class="list-item-meta">
                     <span class="list-item-value">${product.quantidade || 0} ${product.unidade || ''}</span>
                 </div>
+                <button class="btn-delete" onclick="app.deleteProduct(${product.id}, event)" title="Excluir">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                    </svg>
+                </button>
             </div>
         `;
     }
@@ -1726,6 +1773,8 @@ class App {
         const customers = store.getCustomers();
         const products = store.getProducts();
         
+        window.currentEditingOrder = order;
+        
         if (customers.length === 0 && !isEdit) {
             ui.showToast('Cadastre um cliente primeiro', 'warning');
             return;
@@ -1788,9 +1837,9 @@ class App {
                                     </select>
                                     <input type="number" class="item-qty" placeholder="Qtd" style="width:65px;" min="0" step="1" value="${item.quantidade}" oninput="updateOrderItemTotal(this)">
                                     <input type="number" class="item-price" placeholder="0,00" style="width:90px;" step="0.01" value="${item.valorUnitario || item.precoUnitario || 0}" oninput="updateOrderItemTotal(this)">
-                                    <span class="item-subtotal" style="width:100px;font-weight:600;font-size:12px;">R$ ${((item.quantidade || 1) * (item.valorUnitario || item.precoUnitario || 0)).toFixed(2).replace('.', ',')}</span>
+                                    <span class="item-subtotal" style="width:100px;font-weight:600;font-size:12px;">${formatarBRL((item.quantidade || 1) * (item.valorUnitario || item.precoUnitario || 0))}</span>
                                     <input type="number" class="item-comissao" placeholder="0,00" style="width:75px;" step="0.01" value="${item.comissao || products.find(p => p.id == (item.productId || item.product_id))?.comissao || 0}" oninput="updateOrderItemTotal(this)">
-                                    <span class="item-comissao-rs" style="width:80px;font-weight:600;font-size:12px;color:var(--success);">R$ ${(((item.quantidade || 1) * (item.valorUnitario || item.precoUnitario || 0)) * ((item.comissao || products.find(p => p.id == (item.productId || item.product_id))?.comissao || 0) / 100)).toFixed(2).replace('.', ',')}</span>
+                                    <span class="item-comissao-rs" style="width:80px;font-weight:600;font-size:12px;color:var(--success);">${formatarBRL(((item.quantidade || 1) * (item.valorUnitario || item.precoUnitario || 0)) * ((item.comissao || products.find(p => p.id == (item.productId || item.product_id))?.comissao || 0) / 100))}</span>
                                     <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove(); updateOrderTotal();">×</button>
                                 </div>
                             `).join('') : `
@@ -2166,6 +2215,34 @@ class App {
         
         const valorTotal = items.reduce((sum, item) => sum + (item.quantidade * item.valorUnitario), 0);
         
+        // Coleta detalhes das parcelas do container
+        const installmentsRows = document.querySelectorAll('#installments-container .installment-row');
+        const parcelas_detalhes = [];
+        
+        installmentsRows.forEach((row, index) => {
+            const dateInput = row.querySelector('input[type="date"]');
+            const statusBtn = row.querySelector('.status-toggle');
+            const valorStr = row.querySelector('.installment-valor').textContent.replace('R$ ', '').replace(',', '.');
+            const comissaoStr = row.querySelector('.installment-comissao').textContent.replace('R$ ', '').replace(',', '.');
+            
+            parcelas_detalhes.push({
+                numero: index + 1,
+                vencimento: dateInput?.value,
+                valor: parseFloat(valorStr),
+                comissao: parseFloat(comissaoStr),
+                status: statusBtn?.dataset.status || 'pendente'
+            });
+        });
+
+        // Calcula status global do pedido
+        let status_pagamento = 'pendente';
+        if (tipoPagamento === 'avista') {
+            status_pagamento = 'pago';
+        } else {
+            const todasPagas = parcelas_detalhes.length > 0 && parcelas_detalhes.every(p => p.status === 'pago' || p.status === 'Pago');
+            status_pagamento = todasPagas ? 'pago' : 'pendente';
+        }
+
         const orderData = {
             customerId: parseInt(customerId),
             data,
@@ -2173,7 +2250,9 @@ class App {
             parcelas,
             observacoes,
             valorTotal,
-            items
+            items,
+            parcelas_detalhes,
+            status_pagamento
         };
         
         const endpoint = isEdit ? `orders/${orderId}` : 'orders';
@@ -2223,6 +2302,69 @@ class App {
             
             ui.showToast('Pedido excluído!', 'success');
             this.renderView('orders');
+        } catch (error) {
+            ui.showToast(error.message, 'error');
+        }
+    }
+
+    async deleteCustomer(id, event) {
+        event.stopPropagation();
+        if (!confirm('Tem certeza que deseja excluir este cliente? Isso também poderá afetar pedidos vinculados.')) return;
+        
+        try {
+            const response = await fetch(`${API_BASE}/customers/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${auth.token}`
+                }
+            });
+            
+            if (!response.ok) throw new Error('Erro ao excluir cliente');
+            
+            ui.showToast('Cliente excluído!', 'success');
+            this.renderView('customers');
+        } catch (error) {
+            ui.showToast(error.message, 'error');
+        }
+    }
+
+    async deleteProduct(id, event) {
+        event.stopPropagation();
+        if (!confirm('Tem certeza que deseja excluir este produto?')) return;
+        
+        try {
+            const response = await fetch(`${API_BASE}/products/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${auth.token}`
+                }
+            });
+            
+            if (!response.ok) throw new Error('Erro ao excluir produto');
+            
+            ui.showToast('Produto excluído!', 'success');
+            this.renderView('products');
+        } catch (error) {
+            ui.showToast(error.message, 'error');
+        }
+    }
+
+    async deleteCrop(id, event) {
+        event.stopPropagation();
+        if (!confirm('Tem certeza que deseja excluir este tipo de cultura?')) return;
+        
+        try {
+            const response = await fetch(`${API_BASE}/crops/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${auth.token}`
+                }
+            });
+            
+            if (!response.ok) throw new Error('Erro ao excluir cultura');
+            
+            ui.showToast('Cultura excluída!', 'success');
+            this.renderView('crops');
         } catch (error) {
             ui.showToast(error.message, 'error');
         }
@@ -2549,12 +2691,12 @@ window.updateOrderItemTotal = function(input) {
     const comissao = parseFloat(row.querySelector('.item-comissao')?.value) || 0;
     
     const subtotal = qty * price;
-    row.querySelector('.item-subtotal').textContent = 'R$ ' + subtotal.toFixed(2).replace('.', ',');
+    row.querySelector('.item-subtotal').textContent = formatarBRL(subtotal);
     
     const comissaoRs = subtotal * (comissao / 100);
     const comissaoRsSpan = row.querySelector('.item-comissao-rs');
     if (comissaoRsSpan) {
-        comissaoRsSpan.textContent = 'R$ ' + comissaoRs.toFixed(2).replace('.', ',');
+        comissaoRsSpan.textContent = formatarBRL(comissaoRs);
     }
     
     updateOrderTotal();
@@ -2575,13 +2717,13 @@ window.updateOrderTotal = function() {
     });
     
     const subtotalEl = document.getElementById('order-subtotal');
-    if (subtotalEl) subtotalEl.textContent = 'R$ ' + subtotal.toFixed(2).replace('.', ',');
+    if (subtotalEl) subtotalEl.textContent = formatarBRL(subtotal);
     
     const totalEl = document.getElementById('order-total');
-    if (totalEl) totalEl.textContent = 'R$ ' + subtotal.toFixed(2).replace('.', ',');
+    if (totalEl) totalEl.textContent = formatarBRL(subtotal);
     
     const comissaoEl = document.getElementById('order-comissao-total');
-    if (comissaoEl) comissaoEl.textContent = 'R$ ' + totalComissao.toFixed(2).replace('.', ',');
+    if (comissaoEl) comissaoEl.textContent = formatarBRL(totalComissao);
     
     if (typeof window.generateInstallments === 'function') {
         window.generateInstallments();
@@ -2602,58 +2744,119 @@ window.handlePaymentMethodChange = function() {
     generateInstallments();
 };
 
+window.toggleInstallmentStatus = function(btn) {
+    const currentStatus = btn.dataset.status;
+    const newStatus = currentStatus === 'pendente' ? 'pago' : 'pendente';
+    
+    btn.dataset.status = newStatus;
+    btn.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+    
+    if (newStatus === 'pago') {
+        btn.style.background = 'var(--success)';
+        btn.style.color = 'white';
+        btn.style.borderColor = 'var(--success)';
+    } else {
+        btn.style.background = 'transparent';
+        btn.style.color = 'var(--warning)';
+        btn.style.borderColor = 'var(--warning)';
+    }
+};
+
 window.generateInstallments = function() {
     const container = document.getElementById('installments-container');
     if (!container) return;
     
-    const parcelas = parseInt(document.getElementById('parcelas').value) || 1;
+    const parcelasCount = parseInt(document.getElementById('parcelas').value) || 1;
     const dataInicialStr = document.getElementById('data').value;
     const tipoPagamentoEl = document.getElementById('tipo_pagamento');
     const metodoNome = tipoPagamentoEl.options[tipoPagamentoEl.selectedIndex].text;
     
-    const subtotalStr = document.getElementById('order-total').textContent.replace('R$ ', '').replace(',', '.');
-    const totalPedido = parseFloat(subtotalStr) || 0;
+    let totalPedido = 0;
+    let totalComissao = 0;
     
-    const comissaoStr = document.getElementById('order-comissao-total').textContent.replace('R$ ', '').replace(',', '.');
-    const totalComissao = parseFloat(comissaoStr) || 0;
+    // Primeiro tenta ler dos elementos do DOM
+    const totalEl = document.getElementById('order-total');
+    if (totalEl && totalEl.textContent) {
+        const subtotalStr = totalEl.textContent.replace('R$ ', '').replace(/\./g, '').replace(',', '.');
+        totalPedido = parseFloat(subtotalStr) || 0;
+    }
     
-    if (parcelas <= 1) {
+    const comissaoEl = document.getElementById('order-comissao-total');
+    if (comissaoEl && comissaoEl.textContent) {
+        const comissaoStr = comissaoEl.textContent.replace('R$ ', '').replace(/\./g, '').replace(',', '.');
+        totalComissao = parseFloat(comissaoStr) || 0;
+    }
+    
+    // Se ainda estiver 0, calcula diretamente dos itens
+    if (totalPedido === 0) {
+        document.querySelectorAll('.order-item-row').forEach(row => {
+            const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
+            const price = parseFloat(row.querySelector('.item-price')?.value) || 0;
+            const comissaoPct = parseFloat(row.querySelector('.item-comissao')?.value) || 0;
+            totalPedido += qty * price;
+            totalComissao += (qty * price) * (comissaoPct / 100);
+        });
+    }
+    
+    if (parcelasCount <= 1 && tipoPagamentoEl.value !== 'recebimento') {
         container.innerHTML = '';
         return;
     }
     
     if (!dataInicialStr) {
-        container.innerHTML = '<div style="color:var(--danger);font-size:12px;">Selecione a data do pedido primeiro.</div>';
+        container.innerHTML = '<div style="color:var(--danger);font-size:12px;padding:10px;text-align:center;background:var(--bg-tertiary);border-radius:8px;">Selecione a data do pedido primeiro para gerar as parcelas.</div>';
         return;
     }
+
+    // Tenta recuperar parcelas existentes se for o mesmo pedido e mesma quantidade
+    let existingParcelas = [];
+    if (window.currentEditingOrder && window.currentEditingOrder.parcelas == parcelasCount) {
+        existingParcelas = typeof window.currentEditingOrder.parcelas_detalhes === 'string' 
+            ? JSON.parse(window.currentEditingOrder.parcelas_detalhes) 
+            : (window.currentEditingOrder.parcelas_detalhes || []);
+    }
     
-    const valorParcela = totalPedido / parcelas;
-    const comissaoParcela = totalComissao / parcelas;
+    const valorParcela = totalPedido / parcelasCount;
+    const comissaoParcela = totalComissao / parcelasCount;
     
     let dataAtual = new Date(dataInicialStr);
+    // Ajuste de timezone
     dataAtual = new Date(dataAtual.getTime() + dataAtual.getTimezoneOffset() * 60000);
     
-    let html = `<div style="margin-top: 8px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
-                    <h4 style="margin-bottom: 8px; font-size: 14px;">Resumo das Parcelas</h4>
-                    <div style="display:flex;gap:6px;font-weight:600;font-size:11px;margin-bottom:4px;">
-                        <span style="width:30px">P.</span>
-                        <span style="flex:1">Método</span>
-                        <span style="width:110px">Data</span>
-                        <span style="width:80px">Valor</span>
-                        <span style="width:80px">Comissão</span>
+    let html = `<div style="margin-top: 16px; padding: 16px; background: var(--bg-tertiary); border-radius: 12px; border: 1px solid var(--border-color);">
+                    <h4 style="margin-bottom: 12px; font-size: 14px; color: var(--text-primary); font-weight: 600;">Resumo das Parcelas</h4>
+                    <div style="display:grid; grid-template-columns: 40px 1fr 130px 100px 100px 90px; gap:8px; font-weight:700; font-size:11px; margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid var(--border-color); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">
+                        <span>P.</span>
+                        <span>Método</span>
+                        <span>Vencimento</span>
+                        <span style="text-align: right;">Valor</span>
+                        <span style="text-align: right;">Comissão</span>
+                        <span style="text-align: center;">Status</span>
                     </div>`;
                     
-    for (let i = 1; i <= parcelas; i++) {
-        dataAtual.setDate(dataAtual.getDate() + 30);
-        const dataFormatada = dataAtual.toISOString().split('T')[0];
+    for (let i = 1; i <= parcelasCount; i++) {
+        const existing = existingParcelas.find(p => p.numero == i);
+        const dataFormatada = existing ? existing.vencimento : dataAtual.toISOString().split('T')[0];
+        const status = existing ? (existing.status || 'pendente') : 'pendente';
+        const isPago = status === 'pago' || status === 'Pago';
         
-        html += `<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;font-size:12px;">
-                    <span style="width:30px;font-weight:600;">${i}x</span>
-                    <span style="flex:1">${metodoNome}</span>
-                    <input type="date" style="width:110px;padding:4px;" value="${dataFormatada}">
-                    <span style="width:80px">R$ ${valorParcela.toFixed(2).replace('.', ',')}</span>
-                    <span style="width:80px;color:var(--success);">R$ ${comissaoParcela.toFixed(2).replace('.', ',')}</span>
+        html += `<div class="installment-row" style="display:grid; grid-template-columns: 40px 1fr 130px 100px 100px 90px; gap:8px; margin-bottom:8px; align-items:center; font-size:13px; color: var(--text-primary);">
+                    <span style="font-weight:600; color: var(--text-tertiary);">${i}x</span>
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${metodoNome}">${metodoNome}</span>
+                    <input type="date" style="width:100%; padding:4px 8px; border-radius:4px; border:1px solid var(--border-color); font-size:12px; background: var(--bg-primary); color: var(--text-primary);" value="${dataFormatada}">
+                    <span class="installment-valor" style="text-align: right; font-weight: 600;">${formatarBRL(valorParcela)}</span>
+                    <span class="installment-comissao" style="text-align: right; color:var(--success); font-weight: 600;">${formatarBRL(comissaoParcela)}</span>
+                    <div style="text-align: center;">
+                        <button type="button" class="status-toggle" data-status="${status}" onclick="toggleInstallmentStatus(this)" 
+                            style="padding: 2px 8px; border-radius: 12px; border: 1px solid ${isPago ? 'var(--success)' : 'var(--warning)'}; background: ${isPago ? 'var(--success)' : 'transparent'}; color: ${isPago ? 'white' : 'var(--warning)'}; font-size: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s; min-width: 70px;">
+                            ${status.charAt(0).toUpperCase() + status.slice(1)}
+                        </button>
+                    </div>
                  </div>`;
+                 
+        if (!existing) {
+            dataAtual.setMonth(dataAtual.getMonth() + 1);
+        }
     }
     
     html += `</div>`;
