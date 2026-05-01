@@ -1085,7 +1085,7 @@ class App {
                             <span style="display: flex; align-items: center; gap: 4px;"><div style="width: 10px; height: 10px; background: rgba(249,115,22,0.5); border-radius: 2px;"></div> Projetado 15</span>
                             <span style="display: flex; align-items: center; gap: 4px;"><div style="width: 10px; height: 10px; background: rgba(234,88,12,0.5); border-radius: 2px;"></div> Projetado 30</span>
                         </div>
-                        <div style="height: 160px; display: flex; align-items: flex-end; gap: 4px; padding: 0 4px;">
+                        <div style="height: 160px; display: flex; align-items: flex-end; gap: 8px; padding: 0 4px;">
                             ${meses.map((mes, i) => {
                                 const maxVal = Math.max(
                                     comissaoQuinzenal.received15[i] || 0,
@@ -1100,11 +1100,11 @@ class App {
                                 const h30p = maxVal > 0 ? ((comissaoQuinzenal.projected30[i] || 0) / maxVal * 100) : 0;
                                 return `
                                     <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;">
-                                        <div style="width: 100%; display: flex; gap: 1px; justify-content: center; align-items: flex-end; height: 100px;">
-                                            <div style="width: 20%; background: #10b981; border-radius: 2px 2px 0 0; height: ${h15r}%;" title="Recebido 15: ${formatarBRL(comissaoQuinzenal.received15[i] || 0)}"></div>
-                                            <div style="width: 20%; background: #059669; border-radius: 2px 2px 0 0; height: ${h30r}%;" title="Recebido 30: ${formatarBRL(comissaoQuinzenal.received30[i] || 0)}"></div>
-                                            <div style="width: 20%; background: rgba(249,115,22,0.5); border-radius: 2px 2px 0 0; height: ${h15p}%;" title="Projetado 15: ${formatarBRL(comissaoQuinzenal.projected15[i] || 0)}"></div>
-                                            <div style="width: 20%; background: rgba(234,88,12,0.5); border-radius: 2px 2px 0 0; height: ${h30p}%;" title="Projetado 30: ${formatarBRL(comissaoQuinzenal.projected30[i] || 0)}"></div>
+                                        <div style="width: 100%; display: flex; gap: 2px; justify-content: center; align-items: flex-end; height: 100px;">
+                                            <div style="width: 22%; background: #10b981; border-radius: 2px 2px 0 0; height: ${h15r}%;" title="Recebido 15: ${formatarBRL(comissaoQuinzenal.received15[i] || 0)}"></div>
+                                            <div style="width: 22%; background: #059669; border-radius: 2px 2px 0 0; height: ${h30r}%;" title="Recebido 30: ${formatarBRL(comissaoQuinzenal.received30[i] || 0)}"></div>
+                                            <div style="width: 22%; background: rgba(249,115,22,0.5); border-radius: 2px 2px 0 0; height: ${h15p}%;" title="Projetado 15: ${formatarBRL(comissaoQuinzenal.projected15[i] || 0)}"></div>
+                                            <div style="width: 22%; background: rgba(234,88,12,0.5); border-radius: 2px 2px 0 0; height: ${h30p}%;" title="Projetado 30: ${formatarBRL(comissaoQuinzenal.projected30[i] || 0)}"></div>
                                         </div>
                                         <div style="font-size: 9px; color: var(--text-muted);">${mes}</div>
                                     </div>
