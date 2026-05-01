@@ -221,24 +221,25 @@ export const dashboardView = {
                 const valor = parseFloat(p.valor) || 0;
                 const vencimento = new Date(p.vencimento + 'T00:00:00');
                 const status = (p.status || '').toLowerCase();
+                const comissao = valor * (totalComissao / (o.valorTotal || 1));
                 
                 const payday = this.getPaydayForDate(vencimento);
                 const paydayDate = new Date(payday.paydayYear, payday.paydayMonth, payday.payday);
                 
+                // Recebido = apenas status pago
                 if (status === 'pago') {
-                    const comissao = valor * (totalComissao / (o.valorTotal || 1));
                     allInstallments.push({ valor, comissao, vencimento, payday: paydayDate });
                     totalComissaoRecebida += comissao;
                     totalParcelasRecebidas++;
-                } else {
-                    const comissao = valor * (totalComissao / (o.valorTotal || 1));
-                    allProjectedInstallments.push({ valor, comissao, vencimento, payday: paydayDate });
-                    totalComissaoAReceber += comissao;
-                    totalParcelasAReceber++;
-                    
-                    if (paydayDate.getTime() === nextPayday.date.getTime()) {
-                        comissaoProximoRecebimento += comissao;
-                    }
+                }
+                
+                // Projetado = pago + pendente (todos os status)
+                allProjectedInstallments.push({ valor, comissao, vencimento, payday: paydayDate });
+                totalComissaoAReceber += comissao;
+                totalParcelasAReceber++;
+                
+                if (paydayDate.getTime() === nextPayday.date.getTime()) {
+                    comissaoProximoRecebimento += comissao;
                 }
             });
         });

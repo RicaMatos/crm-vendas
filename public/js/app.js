@@ -999,13 +999,15 @@ class App {
                     
                     if (paydayYear !== currentYear) return;
                     
-                    if (status === 'pago') {
+                    // Recebido = apenas status pago
+                    if (status === 'pago' || status === 'Pago') {
                         if (paydayDay === 15) comissaoQuinzenal.received15[paydayMonth] = (comissaoQuinzenal.received15[paydayMonth] || 0) + comissao;
                         else comissaoQuinzenal.received30[paydayMonth] = (comissaoQuinzenal.received30[paydayMonth] || 0) + comissao;
-                    } else {
-                        if (paydayDay === 15) comissaoQuinzenal.projected15[paydayMonth] = (comissaoQuinzenal.projected15[paydayMonth] || 0) + comissao;
-                        else comissaoQuinzenal.projected30[paydayMonth] = (comissaoQuinzenal.projected30[paydayMonth] || 0) + comissao;
                     }
+                    
+                    // Projetado = pago + pendente (todos os status)
+                    if (paydayDay === 15) comissaoQuinzenal.projected15[paydayMonth] = (comissaoQuinzenal.projected15[paydayMonth] || 0) + comissao;
+                    else comissaoQuinzenal.projected30[paydayMonth] = (comissaoQuinzenal.projected30[paydayMonth] || 0) + comissao;
                 });
             }
         });
