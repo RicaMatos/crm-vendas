@@ -939,6 +939,52 @@ class App {
         const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
         const cores = ['#2383e2', '#4daa57', '#cb912f', '#e03e3e', '#9b51e0', '#3d7fa8', '#5aabf8', '#ff8e6e', '#6b7280', '#059669'];
 
+        // Calculo das comissões quinzenais
+        const comissaoQuinzenal = { received15: [], received30: [], projected15: [], projected30: [] };
+        const currentYear = new Date().getFullYear();
+        
+        orders.forEach(order => {
+            const detalhes = typeof order.parcelas_detalhes === 'string' ? JSON.parse(order.parcelas_detalhes) : (order.parcelas_detalhes || []);
+            if (detalhes.length > 0) {
+                const items = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
+                let valorTotal = parseFloat(order.valor_total) || 0;
+                if (valorTotal === 0 && Array.isArray(items)) {
+                    valorTotal = items.reduce((s, i) => s + ((parseFloat(i.quantidade) || 0) * (parseFloat(i.valorUnitario) || parseFloat(i.precoUnitario) || 0)), 0);
+                }
+                const comissaoTotal = items.reduce((s, i) => {
+                    const prod = products.find(p => p.id == (i.productId || i.product_id));
+                    const pct = prod ? (parseFloat(prod.comissao) || 10) : 10;
+                    const val = (parseFloat(i.quantidade) || 0) * (parseFloat(i.valorUnitario) || parseFloat(i.precoUnitario) || 0);
+                    return s + (val * pct / 100);
+                }, 0);
+                const ratio = valorTotal > 0 ? comissaoTotal / valorTotal : 0;
+                
+                detalhes.forEach(p => {
+                    const valor = parseFloat(p.valor) || 0;
+                    const comissao = valor * ratio;
+                    const status = (p.status || '').toLowerCase();
+                    if (!p.vencimento) return;
+                    
+                    let paydayDay = 15;
+                    const day = new Date(p.vencimento).getDate();
+                    if (day <= 12) paydayDay = 15;
+                    else if (day <= 26) paydayDay = 30;
+                    else paydayDay = 15;
+                    
+                    const mes = new Date(p.vencimento).getMonth();
+                    if (new Date(p.vencimento).getFullYear() !== currentYear) return;
+                    
+                    if (status === 'pago') {
+                        if (paydayDay === 15) comissaoQuinzenal.received15[mes] = (comissaoQuinzenal.received15[mes] || 0) + comissao;
+                        else comissaoQuinzenal.received30[mes] = (comissaoQuinzenal.received30[mes] || 0) + comissao;
+                    } else {
+                        if (paydayDay === 15) comissaoQuinzenal.projected15[mes] = (comissaoQuinzenal.projected15[mes] || 0) + comissao;
+                        else comissaoQuinzenal.projected30[mes] = (comissaoQuinzenal.projected30[mes] || 0) + comissao;
+                    }
+                });
+            }
+        });
+
         return `
             <div class="view active">
                 <div class="view-header">
@@ -1024,6 +1070,47 @@ class App {
                                 </div>
                             </div>
                         ` : '<p style="color: var(--text-muted); text-align: center;">Nenhuma venda</p>'}
+                    </div>
+                </div>
+
+                <!-- Gráfico de Comissões Quinzenais -->
+                <div class="card" style="padding: 20px; margin-bottom: 24px;">
+                    <div class="card-header" style="margin-bottom: 16px;">
+                        <h3 class="card-title">Pagamento de Comissões</h3>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; gap: 12px; font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
+                            <span style="display: flex; align-items: center; gap: 4px;"><div style="width: 10px; height: 10px; background: #10b981; border-radius: 2px;"></div> Recebido 15</span>
+                            <span style="display: flex; align-items: center; gap: 4px;"><div style="width: 10px; height: 10px; background: #059669; border-radius: 2px;"></div> Recebido 30</span>
+                            <span style="display: flex; align-items: center; gap: 4px;"><div style="width: 10px; height: 10px; background: rgba(249,115,22,0.5); border-radius: 2px;"></div> Projetado 15</span>
+                            <span style="display: flex; align-items: center; gap: 4px;"><div style="width: 10px; height: 10px; background: rgba(234,88,12,0.5); border-radius: 2px;"></div> Projetado 30</span>
+                        </div>
+                        <div style="height: 160px; display: flex; align-items: flex-end; gap: 4px; padding: 0 4px;">
+                            ${meses.map((mes, i) => {
+                                const maxVal = Math.max(
+                                    comissaoQuinzenal.received15[i] || 0,
+                                    comissaoQuinzenal.received30[i] || 0,
+                                    comissaoQuinzenal.projected15[i] || 0,
+                                    comissaoQuinzenal.projected30[i] || 0,
+                                    1
+                                );
+                                const h15r = maxVal > 0 ? ((comissaoQuinzenal.received15[i] || 0) / maxVal * 100) : 0;
+                                const h30r = maxVal > 0 ? ((comissaoQuinzenal.received30[i] || 0) / maxVal * 100) : 0;
+                                const h15p = maxVal > 0 ? ((comissaoQuinzenal.projected15[i] || 0) / maxVal * 100) : 0;
+                                const h30p = maxVal > 0 ? ((comissaoQuinzenal.projected30[i] || 0) / maxVal * 100) : 0;
+                                return `
+                                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                                        <div style="width: 100%; display: flex; gap: 1px; justify-content: center; align-items: flex-end; height: 100px;">
+                                            <div style="width: 20%; background: #10b981; border-radius: 2px 2px 0 0; height: ${h15r}%;" title="Recebido 15: ${formatarBRL(comissaoQuinzenal.received15[i] || 0)}"></div>
+                                            <div style="width: 20%; background: #059669; border-radius: 2px 2px 0 0; height: ${h30r}%;" title="Recebido 30: ${formatarBRL(comissaoQuinzenal.received30[i] || 0)}"></div>
+                                            <div style="width: 20%; background: rgba(249,115,22,0.5); border-radius: 2px 2px 0 0; height: ${h15p}%;" title="Projetado 15: ${formatarBRL(comissaoQuinzenal.projected15[i] || 0)}"></div>
+                                            <div style="width: 20%; background: rgba(234,88,12,0.5); border-radius: 2px 2px 0 0; height: ${h30p}%;" title="Projetado 30: ${formatarBRL(comissaoQuinzenal.projected30[i] || 0)}"></div>
+                                        </div>
+                                        <div style="font-size: 9px; color: var(--text-muted);">${mes}</div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
                     </div>
                 </div>
 
