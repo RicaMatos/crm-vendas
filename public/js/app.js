@@ -1103,7 +1103,7 @@ class App {
                                 return `
                                     <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
                                         <div style="font-size: 10px; font-weight: 600; color: var(--text-primary);">${hasData ? formatarBRL(totalValue) : ''}</div>
-                                        <div style="width: 100%; background: var(--bg-tertiary); border-radius: 4px 4px 0 0; height: 120px; position: relative;">
+                                        <div style="width: 50%; margin: 0 auto; background: var(--bg-tertiary); border-radius: 4px 4px 0 0; height: 120px; position: relative;">
                                             <div style="position: absolute; bottom: 0; left: 0; right: 0; background: #10b981; border-radius: 4px 4px 0 0; height: ${h15r}%;"></div>
                                             <div style="position: absolute; bottom: ${h15r}%; left: 0; right: 0; background: #059669; border-radius: 4px 4px 0 0; height: ${h30r}%;"></div>
                                             <div style="position: absolute; bottom: ${h15r + h30r}%; left: 0; right: 0; background: rgba(249,115,22,0.5); border-radius: 4px 4px 0 0; height: ${h15p}%;"></div>
