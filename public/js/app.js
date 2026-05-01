@@ -1085,7 +1085,7 @@ class App {
                             <span style="display: flex; align-items: center; gap: 4px;"><div style="width: 10px; height: 10px; background: rgba(249,115,22,0.5); border-radius: 2px;"></div> Projetado 15</span>
                             <span style="display: flex; align-items: center; gap: 4px;"><div style="width: 10px; height: 10px; background: rgba(234,88,12,0.5); border-radius: 2px;"></div> Projetado 30</span>
                         </div>
-                        <div style="height: 160px; display: flex; align-items: flex-end; gap: 8px; padding: 0 4px;">
+                        <div style="height: 180px; display: flex; align-items: flex-end; gap: 6px; padding: 0 4px;">
                             ${meses.map((mes, i) => {
                                 const maxVal = Math.max(
                                     comissaoQuinzenal.received15[i] || 0,
@@ -1098,13 +1098,16 @@ class App {
                                 const h30r = maxVal > 0 ? ((comissaoQuinzenal.received30[i] || 0) / maxVal * 100) : 0;
                                 const h15p = maxVal > 0 ? ((comissaoQuinzenal.projected15[i] || 0) / maxVal * 100) : 0;
                                 const h30p = maxVal > 0 ? ((comissaoQuinzenal.projected30[i] || 0) / maxVal * 100) : 0;
+                                const hasData = (comissaoQuinzenal.received15[i] || 0) + (comissaoQuinzenal.received30[i] || 0) + (comissaoQuinzenal.projected15[i] || 0) + (comissaoQuinzenal.projected30[i] || 0) > 0;
+                                const totalValue = (comissaoQuinzenal.received15[i] || 0) + (comissaoQuinzenal.received30[i] || 0) + (comissaoQuinzenal.projected15[i] || 0) + (comissaoQuinzenal.projected30[i] || 0);
                                 return `
-                                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;">
-                                        <div style="width: 100%; display: flex; gap: 2px; justify-content: center; align-items: flex-end; height: 100px;">
-                                            <div style="width: 26%; background: #10b981; border-radius: 2px 2px 0 0; height: ${h15r}%;" title="Recebido 15: ${formatarBRL(comissaoQuinzenal.received15[i] || 0)}"></div>
-                                            <div style="width: 26%; background: #059669; border-radius: 2px 2px 0 0; height: ${h30r}%;" title="Recebido 30: ${formatarBRL(comissaoQuinzenal.received30[i] || 0)}"></div>
-                                            <div style="width: 26%; background: rgba(249,115,22,0.5); border-radius: 2px 2px 0 0; height: ${h15p}%;" title="Projetado 15: ${formatarBRL(comissaoQuinzenal.projected15[i] || 0)}"></div>
-                                            <div style="width: 26%; background: rgba(234,88,12,0.5); border-radius: 2px 2px 0 0; height: ${h30p}%;" title="Projetado 30: ${formatarBRL(comissaoQuinzenal.projected30[i] || 0)}"></div>
+                                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                                        <div style="font-size: 10px; font-weight: 600; color: var(--text-primary);">${hasData ? formatarBRL(totalValue) : ''}</div>
+                                        <div style="width: 100%; background: var(--bg-tertiary); border-radius: 4px 4px 0 0; height: 120px; position: relative;">
+                                            <div style="position: absolute; bottom: 0; left: 0; right: 0; background: #10b981; border-radius: 4px 4px 0 0; height: ${h15r}%;"></div>
+                                            <div style="position: absolute; bottom: ${h15r}%; left: 0; right: 0; background: #059669; border-radius: 4px 4px 0 0; height: ${h30r}%;"></div>
+                                            <div style="position: absolute; bottom: ${h15r + h30r}%; left: 0; right: 0; background: rgba(249,115,22,0.5); border-radius: 4px 4px 0 0; height: ${h15p}%;"></div>
+                                            <div style="position: absolute; bottom: ${h15r + h30r + h15p}%; left: 0; right: 0; background: rgba(234,88,12,0.5); border-radius: 4px 4px 0 0; height: ${h30p}%;"></div>
                                         </div>
                                         <div style="font-size: 9px; color: var(--text-muted);">${mes}</div>
                                     </div>
