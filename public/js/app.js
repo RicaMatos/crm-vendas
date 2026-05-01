@@ -944,7 +944,12 @@ class App {
         const currentYear = new Date().getFullYear();
         
         orders.forEach(order => {
-            const detalhes = typeof order.parcelas_detalhes === 'string' ? JSON.parse(order.parcelas_detalhes) : (order.parcelas_detalhes || []);
+            let detalhes = order.parcelas_detalhes;
+            if (typeof detalhes === 'string') {
+                try { detalhes = JSON.parse(detalhes); } catch(e) { detalhes = []; }
+            }
+            detalhes = detalhes || [];
+            
             if (detalhes.length > 0) {
                 const items = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
                 let valorTotal = parseFloat(order.valor_total) || 0;
@@ -960,7 +965,11 @@ class App {
                 const ratio = valorTotal > 0 ? comissaoTotal / valorTotal : 0;
                 
                 detalhes.forEach(p => {
-                    const valor = parseFloat(p.valor) || 0;
+                    // Tratamento mais robusto do valor
+                    let valor = 0;
+                    if (p.valor !== undefined && p.valor !== null) {
+                        valor = typeof p.valor === 'number' ? p.valor : parseFloat(String(p.valor).replace('R$ ', '').replace(/\./g, '').replace(',', '.')) || 0;
+                    }
                     const comissao = valor * ratio;
                     const status = (p.status || '').toLowerCase();
                     if (!p.vencimento) return;
@@ -1000,6 +1009,8 @@ class App {
                 });
             }
         });
+        
+        console.log('[DEBUG] comissaoQuinzenal:', comissaoQuinzenal);
 
         return `
             <div class="view active">
