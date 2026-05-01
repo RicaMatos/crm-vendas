@@ -1346,8 +1346,12 @@ return `
         const orders = store.getOrders() || [];
         const products = store.getProducts() || [];
         
-        const selectedYearEl = document.getElementById('commFilterYear');
-        const currentYear = selectedYearEl ? selectedYearEl.value : new Date().getFullYear().toString();
+        let currentYear = yearFilter || new Date().getFullYear().toString();
+        
+        if (!currentYear) {
+            const selectedYearEl = document.getElementById('commFilterYear');
+            currentYear = selectedYearEl ? selectedYearEl.value : new Date().getFullYear().toString();
+        }
         
         const availableYears = [...new Set(orders.map(o => {
             if (!o.data) return null;
@@ -1366,6 +1370,9 @@ return `
         let totalParcelasRecebidas = 0;
         let totalParcelasAReceber = 0;
         let comissaoProximoRecebimento = 0;
+
+        const monthlyReceived = new Array(12).fill(0);
+        const monthlyToReceive = new Array(12).fill(0);
 
         const allInstallments = [];
         const allProjectedInstallments = [];
@@ -1410,15 +1417,19 @@ return `
                 const vencYear = vencimento.getFullYear().toString();
                 
                 if (vencYear === currentYear) {
+                    const mesVencimento = vencimento.getMonth();
+                    
                     if (status === 'pago') {
                         allInstallments.push({ valor, comissao, vencimento, payday: paydayDate });
                         totalComissaoRecebida += comissao;
                         totalParcelasRecebidas++;
+                        monthlyReceived[mesVencimento] += comissao;
                     }
                     
                     allProjectedInstallments.push({ valor, comissao, vencimento, payday: paydayDate });
                     totalComissaoAReceber += comissao;
                     totalParcelasAReceber++;
+                    monthlyToReceive[mesVencimento] += comissao;
                     
                     if (paydayDate.getTime() === nextPayday.date.getTime()) {
                         comissaoProximoRecebimento += comissao;
@@ -1466,6 +1477,9 @@ return `
             }
         });
         
+        this._monthlyReceived = monthlyReceived;
+        this._monthlyToReceive = monthlyToReceive;
+        
         const maxMonthlyCommission = Math.max(...monthlyCommission, 1);
         const avgMonthlyCommission = monthlyCommission.reduce((a, b) => a + b, 0) / 12;
 
@@ -1480,11 +1494,49 @@ return `
 
                 <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px;">
                     <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid var(--success);">
-                        <div class="kpi-card-header">
+                        <div class="kpi-card-header" style="display: flex; justify-content: space-between; align-items: center;">
                             <div class="label"><i data-lucide="check-circle" style="color: #10b981;"></i> COMISSÃO RECEBIDA</div>
+                            <select id="filter-received-month" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">
+                                <option value="all">Todos</option>
+                                <option value="0">Jan</option>
+                                <option value="1">Fev</option>
+                                <option value="2">Mar</option>
+                                <option value="3">Abr</option>
+                                <option value="4">Mai</option>
+                                <option value="5">Jun</option>
+                                <option value="6">Jul</option>
+                                <option value="7">Ago</option>
+                                <option value="8">Set</option>
+                                <option value="9">Out</option>
+                                <option value="10">Nov</option>
+                                <option value="11">Dez</option>
+                            </select>
                         </div>
                         <div class="kpi-card-body">
-                            <div class="value">R$ ${totalComissaoRecebida.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                            <div class="value" id="card-received-value">R$ ${totalComissaoRecebida.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid var(--info);">
+                        <div class="kpi-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="label"><i data-lucide="clock" style="color: #f97316;"></i> COMISSÃO A RECEBER</div>
+                            <select id="filter-toreceive-month" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">
+                                <option value="all">Todos</option>
+                                <option value="0">Jan</option>
+                                <option value="1">Fev</option>
+                                <option value="2">Mar</option>
+                                <option value="3">Abr</option>
+                                <option value="4">Mai</option>
+                                <option value="5">Jun</option>
+                                <option value="6">Jul</option>
+                                <option value="7">Ago</option>
+                                <option value="8">Set</option>
+                                <option value="9">Out</option>
+                                <option value="10">Nov</option>
+                                <option value="11">Dez</option>
+                            </select>
+                        </div>
+                        <div class="kpi-card-body">
+                            <div class="value" id="card-toreceive-value">R$ ${totalComissaoAReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                         </div>
                     </div>
                     <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid var(--success);">
@@ -1493,14 +1545,6 @@ return `
                         </div>
                         <div class="kpi-card-body">
                             <div class="value">R$ ${avgMonthlyCommission.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                        </div>
-                    </div>
-                    <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid var(--info);">
-                        <div class="kpi-card-header">
-                            <div class="label"><i data-lucide="clock" style="color: #f97316;"></i> COMISSÃO A RECEBER</div>
-                        </div>
-                        <div class="kpi-card-body">
-                            <div class="value">R$ ${totalComissaoAReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                         </div>
                     </div>
                     <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid #787774;">
@@ -1625,79 +1669,48 @@ return `
     }
 
     setupCommissionsView() {
-        const orders = store.getOrders() || [];
-        const products = store.getProducts() || [];
         const yearFilter = document.getElementById('commFilterYear')?.value || new Date().getFullYear().toString();
         const yearNum = parseInt(yearFilter);
         
-        const allInstallments = [];
-        const allProjectedInstallments = [];
-        
-        const filteredOrders = orders.filter(o => {
-            if (!o.data) return false;
-            return new Date(o.data).getFullYear().toString() === yearFilter;
-        });
-
-        filteredOrders.forEach(o => {
-            const detalhes = Array.isArray(o.parcelas_detalhes) ? o.parcelas_detalhes : [];
-            const { totalComissao } = this.calculateCommissionForOrder(o, products);
-
-            detalhes.forEach(p => {
-                if (!p || !p.vencimento) return;
-                const valor = parseFloat(p.valor) || 0;
-                const status = (p.status || '').toLowerCase();
-                const comissao = valor * (totalComissao / (o.valorTotal || 1));
-                const vencimento = new Date(p.vencimento + 'T00:00:00');
-                const payday = this.getPaydayForDate(vencimento);
-                const paydayDate = new Date(payday.paydayYear, payday.paydayMonth, payday.payday);
-                
-                if (status === 'pago') {
-                    allInstallments.push({ comissao, payday: paydayDate });
-                }
-                allProjectedInstallments.push({ comissao, payday: paydayDate });
-            });
-        });
-
-        const projectionLabels = [];
-        for (let m = 0; m < 12; m++) {
-            const d = new Date(yearNum, m, 1);
-            let monthName = d.toLocaleString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase();
-            projectionLabels.push(`${monthName} 15`, `${monthName} 30`);
-        }
-
-        const receivedData = new Array(24).fill(0);
-        const projectedData = new Array(24).fill(0);
-        
-        allInstallments.forEach(inst => {
-            const payday = inst.payday;
-            if (payday.getFullYear() === yearNum && payday.getMonth() >= 0 && payday.getMonth() <= 11) {
-                const is15 = payday.getDate() === 15;
-                const idx = payday.getMonth() * 2 + (is15 ? 0 : 1);
-                receivedData[idx] += inst.comissao;
-            }
-        });
-        
-        allProjectedInstallments.forEach(inst => {
-            const payday = inst.payday;
-            if (payday.getFullYear() === yearNum && payday.getMonth() >= 0 && payday.getMonth() <= 11) {
-                const is15 = payday.getDate() === 15;
-                const idx = payday.getMonth() * 2 + (is15 ? 0 : 1);
-                projectedData[idx] += inst.comissao;
-            }
-        });
-
-        this._commissionReceivedData = receivedData;
-        this._commissionProjectedData = projectedData;
-        this._commissionLabels = projectionLabels;
-        
         setTimeout(() => {
             this.initCommissionsCharts();
-        }, 100);
-        
-        document.getElementById('commFilterYear')?.addEventListener('change', (e) => {
-            this.updateCommissionsData(e.target.value);
-        });
-    }
+            
+            document.getElementById('commFilterYear')?.addEventListener('change', (e) => {
+                this.updateCommissionsData(e.target.value);
+            });
+            
+            const updateReceivedValue = () => {
+                const monthFilter = document.getElementById('filter-received-month')?.value || 'all';
+                const cardValue = document.getElementById('card-received-value');
+                const monthlyData = this._monthlyReceived || [];
+                const totalR = monthlyData.reduce((a, b) => a + b, 0);
+                if (monthFilter === 'all') {
+                    cardValue.textContent = 'R$ ' + totalR.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                } else {
+                    const monthIndex = parseInt(monthFilter);
+                    const value = monthlyData[monthIndex] || 0;
+                    cardValue.textContent = 'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                }
+            };
+            
+            const updateToReceiveValue = () => {
+                const monthFilter = document.getElementById('filter-toreceive-month')?.value || 'all';
+                const cardValue = document.getElementById('card-toreceive-value');
+                const monthlyData = this._monthlyToReceive || [];
+                const totalTR = monthlyData.reduce((a, b) => a + b, 0);
+                if (monthFilter === 'all') {
+                    cardValue.textContent = 'R$ ' + totalTR.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                } else {
+                    const monthIndex = parseInt(monthFilter);
+                    const value = monthlyData[monthIndex] || 0;
+                    cardValue.textContent = 'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                }
+            };
+            
+            document.getElementById('filter-received-month')?.addEventListener('change', updateReceivedValue);
+            document.getElementById('filter-toreceive-month')?.addEventListener('change', updateToReceiveValue);
+}, 100);
+}
 
     initCommissionsCharts() {
         if (typeof Chart === 'undefined') return;
@@ -1742,8 +1755,10 @@ return `
 
     updateCommissionsData(yearFilter) {
         const main = document.querySelector('.main-content');
+        const yearSelect = document.getElementById('commFilterYear');
+        const selectedYear = yearSelect ? yearSelect.value : new Date().getFullYear().toString();
         if (main) {
-            main.innerHTML = this.renderCommissions(yearFilter);
+            main.innerHTML = this.renderCommissions(selectedYear);
             this.setupCommissionsView();
         }
     }
