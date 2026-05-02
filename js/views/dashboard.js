@@ -2,8 +2,13 @@ import { store } from '../store.js';
 import { ui } from '../ui-core.js';
 
 const db = {
-    getAll: (col) => store.getState()[col] || [],
-    getById: (col, id) => (store.getState()[col] || []).find(x => x.id == parseInt(id)),
+    getAll: (col) => {
+        const state = store.getState();
+        const data = (state[col] && Array.isArray(state[col])) ? state[col] : [];
+        console.log(`[db.getAll] ${col}:`, data.length, 'itens');
+        return data;
+    },
+    getById: (col, id) => (db.getAll(col)).find(x => x.id == parseInt(id)),
     create: async (col, data) => await store.add(col, data),
     update: async (col, id, data) => await store.update(col, id, data),
     delete: async (col, id) => await store.remove(col, id),
@@ -126,25 +131,42 @@ export const dashboardView = {
     },
 
     updateDashboard(productFilter = 'Todos os Produtos', yearFilter = new Date().getFullYear().toString()) {
-        const orders = db.getAll('orders') || [];
-        const products = db.getAll('products') || [];
-        const customers = db.getAll('customers') || [];
+        const orders = db.getAll('orders');
+        const products = db.getAll('products');
+        const customers = db.getAll('customers');
+        
+        console.log('[updateDashboard] orders:', orders.length);
+        console.log('[updateDashboard] products:', products.length);
+        console.log('[updateDashboard] customers:', customers.length);
+        
         const dashContent = document.getElementById('dashContent');
         if (!dashContent) return;
 
         const yearNum = parseInt(yearFilter);
         const today = new Date();
         
-        let filteredOrders = orders.filter(o => {
-            if (!o.data) return false;
-            return new Date(o.data).getFullYear().toString() === yearFilter;
-        });
-
+        let filteredOrders;
+        
+        let periodFilter = 'ano';
+        const periodSelect = document.querySelector('.kpi-period-filter[data-kpi="vendas"]');
+        if (periodSelect) {
+            periodFilter = periodSelect.value || 'ano';
+        }
+        
+        if (periodFilter === 'ano' || periodFilter === 'tudo') {
+            filteredOrders = orders;
+        } else {
+            filteredOrders = orders.filter(o => {
+                if (!o.data) return false;
+                return new Date(o.data).getFullYear().toString() === yearFilter;
+            });
+        }
+        
         let filteredTotalVendas = 0;
         let finalOrdersForDisplay = [];
 
         if (productFilter === 'Todos os Produtos') {
-            filteredTotalVendas = filteredOrders.reduce((acc, o) => acc + (o.valorTotal || 0), 0);
+            filteredTotalVendas = filteredOrders.reduce((acc, o) => acc + (parseFloat(o.valorTotal) || 0), 0);
             finalOrdersForDisplay = filteredOrders;
         } else {
             filteredOrders.forEach(order => {
@@ -164,9 +186,10 @@ export const dashboardView = {
 
         const monthlyData = new Array(12).fill(0);
         filteredOrders.forEach(o => {
+            if (!o.data) return;
             const m = new Date(o.data).getMonth();
             if (productFilter === 'Todos os Produtos') {
-                monthlyData[m] += (o.valorTotal || 0);
+                monthlyData[m] += (parseFloat(o.valorTotal) || 0);
             } else {
                 const itemsList = o.itens || o.items || [];
                 itemsList.forEach(item => {
@@ -184,7 +207,7 @@ export const dashboardView = {
             if (!salesByState[uf]) salesByState[uf] = 0;
             
             if (productFilter === 'Todos os Produtos') {
-                salesByState[uf] += (order.valorTotal || 0);
+                salesByState[uf] += (parseFloat(order.valorTotal) || 0);
             } else {
                 const itemsList = order.itens || order.items || [];
                 itemsList.forEach(item => {
@@ -310,7 +333,98 @@ export const dashboardView = {
                     <div class="kpi-card-body">
                         <div class="value" id="kpiVendasValue">R$ ${filteredTotalVendas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                     </div>
-</div>
+                </div>
+                <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid var(--success);">
+                    <div class="kpi-card-header">
+                        <div class="label"><i data-lucide="check-circle" style="color: #10b981;"></i> COMISSÃO RECEBIDA</div>
+                        <select class="kpi-period-filter" data-kpi="comissao_recebida">
+                            <option value="ano">Ano</option>
+                            <option value="trimestre">Trimestre</option>
+                            <option value="mes">Mês</option>
+                            <option value="tudo">Tudo</option>
+                        </select>
+                    </div>
+                    <div class="kpi-card-body">
+                        <div class="value" id="kpiComissaoRecebidaValue">R$ ${totalComissaoRecebida.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                        <div class="sub-text">${totalParcelasRecebidas} parcela(s) paga(s)</div>
+                    </div>
+                </div>
+                <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid var(--info);">
+                    <div class="kpi-card-header">
+                        <div class="label"><i data-lucide="clock" style="color: #f97316;"></i> COMISSÃO A RECEBER</div>
+                        <select class="kpi-period-filter" data-kpi="comissao_a_receber">
+                            <option value="ano">Ano</option>
+                            <option value="trimestre">Trimestre</option>
+                            <option value="mes">Mês</option>
+                            <option value="tudo">Tudo</option>
+                        </select>
+                    </div>
+                    <div class="kpi-card-body">
+                        <div class="value" id="kpiComissaoAReceberValue">R$ ${totalComissaoAReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                        <div class="sub-text">${totalParcelasAReceber} parcela(s) aberta(s)</div>
+                    </div>
+                </div>
+                <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid #8b5cf6;">
+                    <div class="kpi-card-header">
+                        <div class="label"><i data-lucide="calendar-check" style="color: #8b5cf6;"></i> PRÓXIMO RECEBIMENTO</div>
+                    </div>
+                    <div class="kpi-card-body">
+                        <div class="value">Dia ${nextPayday.day}</div>
+                        <div class="sub-text">R$ ${comissaoProximoRecebimento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} em ${nextPayday.daysUntil} dia(s)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="perf-grid-mid">
+                <div class="chart-card" style="grid-column: span 2;">
+                    <h3>VENDAS MENSAIS</h3>
+                    <div class="chart-box"><canvas id="chartMensal"></canvas></div>
+                </div>
+                <div class="chart-card states-card">
+                    <h3>VENDAS POR ESTADO</h3>
+                    <div class="states-layout">
+                        <div class="states-table">
+                            <div class="state-header-row">
+                                <span>UF</span>
+                                <span>Valor</span>
+                                <span>%</span>
+                            </div>
+                            ${stateChartData.map((s, i) => `
+                                <div class="state-perf-row ${i === 0 ? 'highlight' : ''}">
+                                    <span class="state-label">${s.uf}</span>
+                                    <div class="state-bar-container">
+                                        <div class="state-bar ${this.getStateColorClass(i)}" style="width: ${s.percent}%"></div>
+                                    </div>
+                                    <span class="state-val">R$ ${(s.total / 1000).toFixed(1)}k</span>
+                                    <span class="state-pct">${s.percent}%</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="states-chart-wrapper">
+                            <div class="chart-title">Participação</div>
+                            <div class="chart-total">${filteredTotalVendas > 0 ? '100%' : '0%'}</div>
+                            <canvas id="chartPizzaEstados"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="perf-grid-bottom">
+                <div class="chart-card">
+                    <h3>PROJEÇÃO DE COMISSÃO</h3>
+                    <div class="projection-legend">
+                        <div class="legend-item">
+                            <div class="legend-dot recebido"></div>
+                            <span>Comissão Recebida</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot projetado"></div>
+                            <span>Comissão Projetada</span>
+                        </div>
+                    </div>
+                    <div class="chart-box"><canvas id="chartEvolucao"></canvas></div>
+                </div>
+            </div>
         `;
 
         if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -361,10 +475,16 @@ export const dashboardView = {
         const products = db.getAll('products') || [];
         const yearNum = parseInt(yearFilter);
         
-        const filteredOrders = orders.filter(o => {
-            if (!o.data) return false;
-            return new Date(o.data).getFullYear().toString() === yearFilter;
-        });
+        let filteredOrders;
+        
+        if (period === 'ano' || period === 'tudo') {
+            filteredOrders = orders;
+        } else {
+            filteredOrders = orders.filter(o => {
+                if (!o.data) return false;
+                return new Date(o.data).getFullYear().toString() === yearFilter;
+            });
+        }
         
         const ordersToCalculate = this.filterOrdersByPeriod(filteredOrders, period, yearNum);
         
@@ -372,7 +492,7 @@ export const dashboardView = {
         let parcelas = 0;
         
         if (kpiType === 'vendas') {
-            value = ordersToCalculate.reduce((acc, o) => acc + (o.valorTotal || 0), 0);
+            value = ordersToCalculate.reduce((acc, o) => acc + (parseFloat(o.valorTotal) || 0), 0);
             return { value, parcelas: ordersToCalculate.length };
         }
         

@@ -993,7 +993,7 @@ class App {
         const totalStateSales = topStates.reduce((s, [k, v]) => s + v.total, 0);
         
         const maxQty = topProducts.length > 0 ? topProducts[0][1].quantidade : 1;
-        const maxMonthly = Math.max(...monthlySalesEffective, 1);
+        const maxMonthly = Math.max(...monthlySales, 1);
         
         const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
         const cores = ['#2383e2', '#4daa57', '#cb912f', '#e03e3e', '#9b51e0', '#3d7fa8', '#5aabf8', '#ff8e6e', '#6b7280', '#059669'];
@@ -1006,13 +1006,13 @@ return `
                 
                 <!-- KPIs -->
                 <div class="stats-grid" style="margin-bottom: 24px;">
-                    <div class="stat-card orange">
-                        <div class="stat-label">Vendas Efetivadas</div>
-                        <div class="stat-value">${formatarBRL(totalSalesEffective)}</div>
-                    </div>
                     <div class="stat-card blue">
                         <div class="stat-label">Vendas Totais</div>
                         <div class="stat-value">${formatarBRL(totalSales)}</div>
+                    </div>
+                    <div class="stat-card orange">
+                        <div class="stat-label">Vendas Efetivadas</div>
+                        <div class="stat-value">${formatarBRL(totalSalesEffective)}</div>
                     </div>
                     <div class="stat-card green">
                         <div class="stat-label">Comissão Total</div>
@@ -1028,10 +1028,10 @@ return `
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
                     <div class="card" style="padding: 20px;">
                         <div class="card-header" style="margin-bottom: 20px;">
-                            <h3 class="card-title">Vendas Efetivadas Mensais</h3>
+                            <h3 class="card-title">Vendas Mensais</h3>
                         </div>
                         <div style="height: 180px; display: flex; align-items: flex-end; gap: 6px; padding: 0 4px;">
-                            ${monthlySalesEffective.map((valor, i) => {
+                            ${monthlySales.map((valor, i) => {
                                 const height = maxMonthly > 0 ? (valor / maxMonthly * 100) : 0;
                                 return `
                                     <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">

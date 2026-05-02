@@ -8,6 +8,7 @@ import { cropsView } from './views/crops.js';
 import { tasksView } from './views/tasks.js';
 import { settingsView } from './views/settings.js';
 import { commissionsView } from './views/commissions.js';
+import { salesReportView } from './views/salesReport.js';
 
 /* 
    Interface do Usuário (UI) 
@@ -355,6 +356,14 @@ class UIService {
                             </svg>
                             <span>Comissões</span>
                         </a>
+                        <a href="#" class="nav-item" data-view="sales-report">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/>
+                            </svg>
+                            <span>Relatórios</span>
+                        </a>
                         <a href="#" class="nav-item" data-view="customers">
                             <i data-lucide="users"></i> Clientes
                         </a>
@@ -453,7 +462,7 @@ class UIService {
         
         // Ajustar botão da topbar dependendo da view
         if (topbarBtn) {
-            if (view === 'commissions') {
+            if (view === 'commissions' || view === 'sales-report') {
                 topbarBtn.style.display = 'none';
             } else {
                 topbarBtn.style.display = '';
@@ -495,6 +504,10 @@ class UIService {
                 viewTitle.innerText = 'Comissões';
                 this.renderCommissions(contentArea);
                 break;
+            case 'sales-report':
+                viewTitle.innerText = 'Relatório de Vendas';
+                this.renderSalesReport(contentArea);
+                break;
             case 'users':
                 viewTitle.innerText = 'Gerenciamento de Usuários';
                 this.renderSettings(contentArea);
@@ -511,5 +524,5 @@ default:
 
 export const ui = new UIService();
 
-Object.assign(ui, dashboardView, customersView, productsView, ordersView, cropsView, tasksView, settingsView, commissionsView);
+Object.assign(ui, dashboardView, customersView, productsView, ordersView, cropsView, tasksView, settingsView, commissionsView, salesReportView);
 window.ui = ui;
