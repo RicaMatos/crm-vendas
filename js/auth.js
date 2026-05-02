@@ -43,6 +43,37 @@ export const auth = {
         }
     },
 
+    async loginWithGoogle(googleUser, rememberMe = false) {
+        try {
+            console.log('[auth] Login com Google:', googleUser.email);
+            const res = await fetch(`${API_URL}/google`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    email: googleUser.email, 
+                    nome: googleUser.nome, 
+                    googleId: googleUser.id,
+                    avatar: googleUser.avatar,
+                    rememberMe
+                })
+            });
+            const data = await res.json();
+            
+            if (data.success && data.data) {
+                const storage = rememberMe ? localStorage : sessionStorage;
+                storage.setItem('CRM_TOKEN', data.data.token);
+                const userWithNivel = { ...data.data.user, nivel: data.data.user.nivel || 'Vendedor' };
+                storage.setItem('CRM_USER', JSON.stringify(userWithNivel));
+                return { success: true };
+            } else {
+                return { success: false, message: data.message || 'Erro ao fazer login com Google' };
+            }
+        } catch (e) {
+            console.error('[auth] Erro de conexão:', e);
+            return { success: false, message: 'Erro de conexão com o servidor' };
+        }
+    },
+
     logout() {
         sessionStorage.removeItem('CRM_TOKEN');
         sessionStorage.removeItem('CRM_USER');

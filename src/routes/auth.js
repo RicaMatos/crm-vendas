@@ -184,6 +184,93 @@ router.post('/login', async (req, res) => {
 });
 
 /**
+ * Login com Google (OAuth) - via token JWT do Google
+ * POST /api/auth/google
+ * Body: { credential } (JWT token from Google)
+ */
+router.post('/google', async (req, res) => {
+    try {
+        const { credential, email, nome, googleId, avatar } = req.body;
+
+        let payload;
+        let userEmail = email;
+        let userName = nome;
+        let userGoogleId = googleId;
+        let userAvatar = avatar;
+
+        // Se enviou o credential (JWT), decodifica para obter os dados
+        if (credential) {
+            try {
+                const base64Url = credential.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                payload = JSON.parse(jsonPayload);
+                userEmail = payload.email;
+                userName = payload.name;
+                userGoogleId = payload.sub;
+                userAvatar = payload.picture;
+            } catch (e) {
+                console.error('[auth] Erro ao decodificar credential:', e);
+            }
+        }
+
+        if (!userEmail || !userGoogleId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email e Google ID são obrigatório'
+            });
+        }
+
+        console.log('[auth] Login com Google:', userEmail);
+
+        // Busca usuário no Supabase Auth
+        let { data: usersList, error: listError } = await supabase.auth.admin.listUsers();
+        
+        if (listError) {
+            console.error('[auth] Erro ao listar usuários:', listError);
+        }
+
+        const existingAuthUser = usersList?.users?.find(u => u.email === userEmail);
+
+        // Gera token JWT不论 usuário auth existe ou não
+        const token = jwt.sign(
+            { 
+                sub: existingAuthUser?.id || userGoogleId, 
+                email: userEmail, 
+                nome: userName,
+                provider: 'google',
+                avatar: userAvatar
+            },
+            JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        res.json({
+            success: true,
+            message: 'Login com Google realizado com sucesso!',
+            data: {
+                user: {
+                    id: existingAuthUser?.id || userGoogleId,
+                    email: userEmail,
+                    nome: userName || userEmail.split('@')[0],
+                    nivel: 'Vendedor',
+                    avatar: userAvatar
+                },
+                token
+            }
+        });
+    } catch (error) {
+        console.error('[auth] Erro em google login:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro interno do servidor'
+        });
+    }
+});
+
+/**
  * Logout de usuário
  * POST /api/auth/logout
  * Headers: Authorization: Bearer <token>

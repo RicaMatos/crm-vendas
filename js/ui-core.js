@@ -312,7 +312,7 @@ class UIService {
         });
     }
 
-    handleGoogleLogin(response) {
+    async handleGoogleLogin(response) {
         try {
             const base64Url = response.credential.split('.')[1];
             const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -327,10 +327,16 @@ class UIService {
                 avatar: payload.picture,
                 nivel: 'Vendedor'
             };
-            auth.loginWithGoogle(googleUser);
-            this.renderDashboard();
+            const result = await auth.loginWithGoogle(googleUser);
+            if (result.success) {
+                await store.fetchAll();
+                this.renderDashboard();
+            } else {
+                this.showToast(result.message || 'Erro ao fazer login com Google', 'error');
+            }
         } catch (e) {
             console.error('Erro ao processar login Google:', e);
+            this.showToast('Erro ao processar login Google', 'error');
         }
     }
 
