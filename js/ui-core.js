@@ -179,7 +179,7 @@ bindLoginEvents() {
                 try {
                     console.log('[UI] Inicializando Google Login...');
                     google.accounts.id.initialize({
-                        client_id: "755495914619-u3v8v9q4g6m4i6q4m4i6q4m4i6q4m4i6.apps.googleusercontent.com",
+                        client_id: "818698885855-9snmgd349lskd56iba9fcndcp3vrbe36.apps.googleusercontent.com",
                         callback: (res) => this.handleGoogleLogin(res)
                     });
                     google.accounts.id.renderButton(
