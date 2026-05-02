@@ -59,6 +59,22 @@ class UIService {
         return container;
     }
 
+    createFallbackButton(container) {
+        container.innerHTML = `<a href="#" id="google-login-fallback" class="btn-google" style="display:flex;justify-content:center;align-items:center;gap:10px;width:100%;max-width:320px;padding:12px 20px;background:#fff;border:1px solid #dadce0;border-radius:4px;cursor:pointer;font-family:Roboto,sans-serif;font-size:14px;color:#3c4043;transition:background 0.2s;text-decoration:none;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="20" height="20">
+                <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.5v5.44h7.11c4.16-3.83 6.56-9.47 6.56-15.95z"/>
+                <path fill="#34A853" d="M24 46c5.4 0 9.93-1.79 13.25-4.84l-7.11-5.44c-1.79 1.19-4.09 1.89-6.14 1.89-4.72 0-8.73-3.19-10.16-7.49-3.4 6.35-10.16 10.72 10.16 10.72z"/>
+                <path fill="#FBBC05" d="M13.84 27.51c.22-1.61.77-3.15 1.7-4.51v-5.44H7.11c-2.68 1.79-4.22 4.44-4.22 7.61s1.54 5.82 4.22 7.61l.03-.22z"/>
+                <path fill="#EA4335" d="M24 12.75c2.63 0 4.99.91 6.84 2.68l5.7-5.7C38.93 6.11 32.4 3 24 3 15.84 3 9.01 6.86 7.1 12.75l6.56 5.09c1.43-4.3 5.44-7.49 10.16-7.49z"/>
+            </svg>
+            Entrar com Google
+        </a>`;
+        document.getElementById('google-login-fallback')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showToast('Configure o OAuth Google no Supabase para usar login com Google', 'info');
+        });
+    }
+
     showToast(message, type = 'info', duration = 3000) {
         const toast = document.createElement('div');
         const colors = {
@@ -146,12 +162,22 @@ class UIService {
     }
 
 bindLoginEvents() {
-        const initGoogleLogin = () => {
+        setTimeout(async () => {
             const btnContainer = document.getElementById("google-login-btn");
+            console.log('[UI] initGoogleLogin - container:', !!btnContainer, 'google:', !!window.google);
             if (!btnContainer) return;
+            
+            // Espera Google carregar
+            let attempts = 0;
+            while (!window.google && attempts < 10) {
+                await new Promise(r => setTimeout(r, 200));
+                attempts++;
+                console.log('[UI] Esperando Google...', attempts);
+            }
             
             if (window.google) {
                 try {
+                    console.log('[UI] Inicializando Google Login...');
                     google.accounts.id.initialize({
                         client_id: "755495914619-u3v8v9q4g6m4i6q4m4i6q4m4i6q4m4i6.apps.googleusercontent.com",
                         callback: (res) => this.handleGoogleLogin(res)
@@ -160,22 +186,16 @@ bindLoginEvents() {
                         btnContainer,
                         { theme: "outline", size: "large", width: "320", text: "signin_with" }
                     );
+                    console.log('[UI] Botão Google renderizado');
                 } catch (e) {
-                    console.error('Erro ao inicializar Google Login:', e);
-                    btnContainer.innerHTML = '<a href="#" id="google-login-fallback" class="btn btn-outline" style="display:flex;justify-content:center;align-items:center;gap:8px;width:320px;padding:10px;border:1px solid #ddd;border-radius:4px;cursor:pointer;text-decoration:none;color:#333;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M17 12c0-2.76-2.24-5-5-5H8"/><path d="M12 17c2.76 0 5-2.24 5-5V8"/></svg>Entrar com Google</a>';
-                    document.getElementById('google-login-fallback')?.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        this.showToast('Configure o OAuth Google no Supabase para usar login com Google', 'info');
-                    });
+                    console.error('[UI] Erro ao inicializar Google Login:', e);
+                    this.createFallbackButton(btnContainer);
                 }
+            } else {
+                console.warn('[UI] Google Identity Services não carregou');
+                this.createFallbackButton(btnContainer);
             }
-        };
-
-        if (document.readyState === 'complete') {
-            setTimeout(initGoogleLogin, 100);
-        } else {
-            window.addEventListener('load', () => setTimeout(initGoogleLogin, 100));
-        }
+        }, 300);
 
         const form = document.getElementById('login-form');
         if (form) {
