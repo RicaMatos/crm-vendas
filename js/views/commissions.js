@@ -292,9 +292,7 @@ export const commissionsView = {
                     labels: projection.labels,
                     datasets: [
                         { label: 'Recebido 15', data: data15, backgroundColor: '#10b981', borderRadius: 3 },
-                        { label: 'Recebido 30', data: data30, backgroundColor: '#059669', borderRadius: 3 },
-                        { label: 'Projetado 15', data: proj15, backgroundColor: 'rgba(249, 115, 22, 0.5)', borderRadius: 3 },
-                        { label: 'Projetado 30', data: proj30, backgroundColor: 'rgba(234, 88, 12, 0.5)', borderRadius: 3 }
+                        { label: 'Recebido 30', data: data30, backgroundColor: '#059669', borderRadius: 3 }
                     ]
                 },
                 options: {
@@ -327,17 +325,6 @@ export const commissionsView = {
                             fill: true,
                             pointRadius: 4,
                             pointBackgroundColor: '#06b6d4'
-                        },
-                        {
-                            label: 'Projetado',
-                            data: projection.projectedData || [],
-                            borderColor: '#f97316',
-                            backgroundColor: 'transparent',
-                            borderDash: [5, 5],
-                            tension: 0.4,
-                            fill: false,
-                            pointRadius: 4,
-                            pointBackgroundColor: '#f97316'
                         }
                     ]
                 },

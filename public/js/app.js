@@ -853,8 +853,10 @@ class App {
         
         // Calculo de vendas e comissao
         let totalSales = 0;
+        let totalSalesEffective = 0;
         let totalCommission = 0;
         const monthlySales = [0,0,0,0,0,0,0,0,0,0,0,0];
+        const monthlySalesEffective = [0,0,0,0,0,0,0,0,0,0,0,0];
         
         const productSales = {};
         const stateSales = {};
@@ -879,15 +881,28 @@ class App {
                 let month = 0;
                 let year = currentYear;
                 try {
-                    const d = new Date(order.data);
+                    const d = new Date(order.data + 'T12:00:00');
                     month = d.getMonth();
                     year = d.getFullYear();
                 } catch(e) {}
                 
                 // Filtrar por ano atual para vendas
                 if (year === currentYear) {
+                    // Vendas totais (todos os pedidos do ano)
                     monthlySales[month] += orderValue;
                     totalSales += orderValue;
+                    
+                    // Vendas efetivadas = apenas pedidos com todas as parcelas pagas
+                    // (não considera mais automatico por tipo de pagamento)
+                    const detalhes = Array.isArray(order.parcelas_detalhes) ? order.parcelas_detalhes : [];
+                    const vendaEfetivada = detalhes.length > 0 
+                        ? detalhes.every(p => p.status === 'pago' || p.status === 'Pago')
+                        : (order.status_pagamento === 'pago' || order.status_pagamento === 'Pago');
+                    
+                    if (vendaEfetivada) {
+                        monthlySalesEffective[month] += orderValue;
+                        totalSalesEffective += orderValue;
+                    }
                 }
                 
                 // Calculo de comissao baseada em parcelas pagas
@@ -962,8 +977,10 @@ class App {
         }
         
         const mesesComMovimentacao = monthlySales.filter(v => v > 0).length || 1;
-        const avgSales = totalSales / mesesComMovimentacao;
-        const avgCommission = totalCommission / mesesComMovimentacao;
+        const mesesComMovimentacaoEfetiva = monthlySalesEffective.filter(v => v > 0).length || 1;
+        console.log('Dashboard final - totalSales:', totalSales, 'totalSalesEffective:', totalSalesEffective, 'months:', mesesComMovimentacao);
+        const avgSales = totalSalesEffective / mesesComMovimentacaoEfetiva;
+        const avgCommission = totalCommission / mesesComMovimentacaoEfetiva;
         
         const topProducts = Object.entries(productSales)
             .sort((a, b) => b[1].quantidade - a[1].quantidade)
@@ -976,7 +993,7 @@ class App {
         const totalStateSales = topStates.reduce((s, [k, v]) => s + v.total, 0);
         
         const maxQty = topProducts.length > 0 ? topProducts[0][1].quantidade : 1;
-        const maxMonthly = Math.max(...monthlySales, 1);
+        const maxMonthly = Math.max(...monthlySalesEffective, 1);
         
         const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
         const cores = ['#2383e2', '#4daa57', '#cb912f', '#e03e3e', '#9b51e0', '#3d7fa8', '#5aabf8', '#ff8e6e', '#6b7280', '#059669'];
@@ -990,12 +1007,12 @@ return `
                 <!-- KPIs -->
                 <div class="stats-grid" style="margin-bottom: 24px;">
                     <div class="stat-card orange">
-                        <div class="stat-label">Valor Total Vendas</div>
-                        <div class="stat-value">${formatarBRL(totalSales)}</div>
+                        <div class="stat-label">Vendas Efetivadas</div>
+                        <div class="stat-value">${formatarBRL(totalSalesEffective)}</div>
                     </div>
                     <div class="stat-card blue">
-                        <div class="stat-label">Média Vendas/Mês</div>
-                        <div class="stat-value">${formatarBRL(avgSales)}</div>
+                        <div class="stat-label">Vendas Totais</div>
+                        <div class="stat-value">${formatarBRL(totalSales)}</div>
                     </div>
                     <div class="stat-card green">
                         <div class="stat-label">Comissão Total</div>
@@ -1011,10 +1028,10 @@ return `
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
                     <div class="card" style="padding: 20px;">
                         <div class="card-header" style="margin-bottom: 20px;">
-                            <h3 class="card-title">Volume de Vendas Mensais</h3>
+                            <h3 class="card-title">Vendas Efetivadas Mensais</h3>
                         </div>
                         <div style="height: 180px; display: flex; align-items: flex-end; gap: 6px; padding: 0 4px;">
-                            ${monthlySales.map((valor, i) => {
+                            ${monthlySalesEffective.map((valor, i) => {
                                 const height = maxMonthly > 0 ? (valor / maxMonthly * 100) : 0;
                                 return `
                                     <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
@@ -1227,18 +1244,26 @@ return `
         } catch (e) {}
 
         const dataPedido = order.data ? new Date(order.data + 'T12:00:00').toLocaleDateString('pt-BR') : '';
-        const tipoPagamento = order.tipo_pagamento === 'avista' ? 'À Vista' : 'Parcelado';
+        const tipoPagamentoLabel = {
+            'avista': 'À Vista',
+            'boleto': 'Boleto',
+            'parcelado': 'Parcelado',
+            'credito': 'Cartão 1x',
+            'recebimento': 'Recebimento'
+        }[order.tipo_pagamento] || order.tipo_pagamento || 'À Vista';
         
-        // Calcula status real
-        let statusReal = order.status_pagamento || 'pendente';
-        if (order.tipo_pagamento === 'avista') {
-            statusReal = 'pago';
-        } else if (parcelasDetalhes.length > 0) {
+        // Calcula status real baseado nas parcelas (não mais no tipo de pagamento)
+        // qualquer forma de pagamento (avista, boleto, parcelado, credito 1x) 
+        // só será considerada paga quando a parcela estiver marcada como "Pago"
+        let statusReal = 'pendente';
+        if (parcelasDetalhes.length > 0) {
             const todasPagas = parcelasDetalhes.every(p => p.status === 'pago' || p.status === 'Pago');
             statusReal = todasPagas ? 'pago' : 'pendente';
+        } else if (order.status_pagamento === 'pago' || order.status_pagamento === 'Pago') {
+            statusReal = 'pago';
         }
 
-        const infoParcelas = (order.tipo_pagamento !== 'avista' && order.tipo_pagamento !== 'recebimento' && totalCount > 1) ? `<span class="badge badge-info" style="text-transform: uppercase;">${paidCount} parcela${paidCount !== 1 ? 's' : ''} paga${paidCount !== 1 ? 's' : ''} de ${totalCount}</span>` : '';
+        const infoParcelas = (order.tipo_pagamento !== 'recebimento') ? `<span class="badge badge-info" style="text-transform: uppercase;">${paidCount} parcela${paidCount !== 1 ? 's' : ''} paga${paidCount !== 1 ? 's' : ''} de ${totalCount}</span>` : '';
         
         return `
             <div class="list-item" data-id="${order.id}">
@@ -1247,7 +1272,7 @@ return `
                     <div class="list-item-subtitle">${order.customers?.nome || 'Cliente'}</div>
                     <div class="list-item-badges">
                         <span class="badge badge-info">${dataPedido}</span>
-                        <span class="badge badge-info">${tipoPagamento}</span>
+<span class="badge badge-info">${tipoPagamentoLabel}</span>
                         <span class="badge badge-info">${totalCount}x</span>
                         ${infoParcelas}
                     </div>
@@ -1531,11 +1556,24 @@ return `
         const cores = ['#2383e2', '#4daa57', '#cb912f', '#e03e3e', '#9b51e0', '#3d7fa8', '#5aabf8', '#ff8e6e', '#6b7280', '#059669', '#9333ea', '#14b8a6'];
         const coresEscuro = ['#1a6bb8', '#3d8a45', '#a87527', '#b83232', '#7d41b8', '#316687', '#4889c7', '#cc7157', '#5a5d66', '#047854', '#7629ba', '#109489'];
         
-allProjectedInstallments.forEach(inst => {
+// Gráfico de Projeção Quinzenal - APENAS parcelas pagas
+        const biweeklyCommissionPaid = new Array(24).fill(0);
+        allInstallments.forEach(inst => {
             const vencimento = inst.vencimento;
             const payday = this.getPaydayForDate(vencimento);
             const paydayYearNum = parseInt(payday.paydayYear);
-if (paydayYearNum === yearNum && payday.paydayMonth >= 0 && payday.paydayMonth <= 11) {
+            if (paydayYearNum === yearNum && payday.paydayMonth >= 0 && payday.paydayMonth <= 11) {
+                const biweeklyIndex = payday.paydayMonth * 2 + (payday.payday === 15 ? 0 : 1);
+                biweeklyCommissionPaid[biweeklyIndex] += inst.comissao;
+            }
+        });
+
+        // Mantém cálculos existentes com todas as parcelas (para KPIs)
+        allProjectedInstallments.forEach(inst => {
+            const vencimento = inst.vencimento;
+            const payday = this.getPaydayForDate(vencimento);
+            const paydayYearNum = parseInt(payday.paydayYear);
+            if (paydayYearNum === yearNum && payday.paydayMonth >= 0 && payday.paydayMonth <= 11) {
                 monthlyCommission[vencimento.getMonth()] += inst.comissao;
                 const biweeklyIndex = payday.paydayMonth * 2 + (payday.payday === 15 ? 0 : 1);
                 biweeklyCommission[biweeklyIndex] += inst.comissao;
@@ -1544,7 +1582,7 @@ if (paydayYearNum === yearNum && payday.paydayMonth >= 0 && payday.paydayMonth <
 
         const maxMonthlyCommission = Math.max(...monthlyCommission, 1);
         const avgMonthlyCommission = monthlyCommission.reduce((a, b) => a + b, 0) / 12;
-        const maxBiweeklyCommission = Math.max(...biweeklyCommission, 1);
+        const maxBiweeklyCommission = Math.max(...biweeklyCommissionPaid, 1);
         
         const monthlyToReceiveByPayday = new Array(12).fill(0);
         for (let m = 0; m < 12; m++) {
@@ -1668,7 +1706,7 @@ if (paydayYearNum === yearNum && payday.paydayMonth >= 0 && payday.paydayMonth <
                             <span style="font-size: 10px; color: var(--text-muted);">Apenas parcelas pagas</span>
                         </div>
                         <div style="height: 180px; display: flex; align-items: flex-end; gap: 3px; padding: 0 4px;">
-                            ${biweeklyCommission.map((valor, i) => {
+                            ${biweeklyCommissionPaid.map((valor, i) => {
                                 const monthIndex = Math.floor(i / 2);
                                 const is15 = i % 2 === 0;
                                 const isLastOfMonth = i % 2 === 1;
@@ -1835,9 +1873,7 @@ if (paydayYearNum === yearNum && payday.paydayMonth >= 0 && payday.paydayMonth <
                 labels: labels,
                 datasets: [
                     { label: 'Recebido 15', data: data15, backgroundColor: '#10b981', borderRadius: 3 },
-                    { label: 'Recebido 30', data: data30, backgroundColor: '#059669', borderRadius: 3 },
-                    { label: 'Projetado 15', data: proj15, backgroundColor: 'rgba(249, 115, 22, 0.5)', borderRadius: 3 },
-                    { label: 'Projetado 30', data: proj30, backgroundColor: 'rgba(234, 88, 12, 0.5)', borderRadius: 3 }
+                    { label: 'Recebido 30', data: data30, backgroundColor: '#059669', borderRadius: 3 }
                 ]
             },
             options: {
@@ -2763,14 +2799,12 @@ if (paydayYearNum === yearNum && payday.paydayMonth >= 0 && payday.paydayMonth <
             });
         });
 
-        // Calcula status global do pedido
-        let status_pagamento = 'pendente';
-        if (tipoPagamento === 'avista') {
-            status_pagamento = 'pago';
-        } else {
-            const todasPagas = parcelas_detalhes.length > 0 && parcelas_detalhes.every(p => p.status === 'pago' || p.status === 'Pago');
-            status_pagamento = todasPagas ? 'pago' : 'pendente';
-        }
+        // Calcula status global do pedido baseado nas parcelas
+        // Agora qualquer forma de pagamento (avista, boleto, parcelado, credito 1x) 
+        // não é considerada automaticamente como venda efetivada
+        // Venda efetivada = quando a parcela for marcada como "Pago"
+        const todasPagas = parcelas_detalhes.length > 0 && parcelas_detalhes.every(p => p.status === 'pago' || p.status === 'Pago');
+        let status_pagamento = todasPagas ? 'pago' : 'pendente';
 
         const orderData = {
             customerId: parseInt(customerId),
@@ -3327,7 +3361,7 @@ window.generateInstallments = function() {
         });
     }
     
-    if (parcelasCount <= 1 && tipoPagamentoEl.value !== 'recebimento') {
+    if (tipoPagamentoEl.value === 'recebimento') {
         container.innerHTML = '';
         return;
     }

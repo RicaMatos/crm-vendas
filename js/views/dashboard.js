@@ -476,17 +476,6 @@ export const dashboardView = {
                             fill: true,
                             pointRadius: 4,
                             pointBackgroundColor: '#06b6d4'
-                        },
-                        {
-                            label: 'Projetado',
-                            data: projection.projectedData || [],
-                            borderColor: '#f97316',
-                            backgroundColor: 'transparent',
-                            borderDash: [5, 5],
-                            tension: 0.4,
-                            fill: false,
-                            pointRadius: 4,
-                            pointBackgroundColor: '#f97316'
                         }
                     ]
                 },
