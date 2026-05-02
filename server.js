@@ -40,8 +40,7 @@ app.use(express.json({ limit: '10mb' }));
 // Parser URL encoded
 app.use(express.urlencoded({ extended: true }));
 
-// Servir arquivos estáticos do frontend (pasta js/ tem prioridade)
-app.use('/js', express.static(path.join(__dirname, 'js')));
+// Servir arquivos estáticos do frontend (prioridade: public/)
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Favicon
