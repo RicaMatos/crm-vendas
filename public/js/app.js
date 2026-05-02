@@ -626,6 +626,83 @@ class App {
             await auth.login(email, password);
         });
 
+        // Google Login - Inicializar
+        const initGoogleLogin = () => {
+            const btnContainer = document.getElementById('google-login-btn');
+            if (!btnContainer || !window.google) return;
+            
+            try {
+                google.accounts.id.initialize({
+                    client_id: "818698885855-9snmgd349lskd56iba9fcndcp3vrbe36.apps.googleusercontent.com",
+                    callback: handleGoogleLogin
+                });
+                google.accounts.id.renderButton(btnContainer, {
+                    theme: "outline",
+                    size: "large",
+                    width: "100%"
+                });
+                console.log('[Auth] Google Login inicializado');
+            } catch (e) {
+                console.error('[Auth] Erro ao inicializar Google:', e);
+            }
+        };
+
+        // Google Login - Callback
+        const handleGoogleLogin = async (response) => {
+            try {
+                const base64Url = response.credential.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
+                    '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+                ).join(''));
+                const payload = JSON.parse(jsonPayload);
+                const googleUser = {
+                    id: payload.sub,
+                    nome: payload.name,
+                    email: payload.email,
+                    avatar: payload.picture
+                };
+                console.log('[Auth] Login Google:', googleUser.email);
+                await loginWithGoogle(googleUser);
+            } catch (e) {
+                console.error('[Auth] Erro Google Login:', e);
+                ui.showToast('Erro ao fazer login com Google', 'error');
+            }
+        };
+
+        // Google Login - API call
+        const loginWithGoogle = async (googleUser) => {
+            try {
+                const response = await fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: googleUser.email,
+                        nome: googleUser.nome,
+                        googleId: googleUser.id,
+                        avatar: googleUser.avatar
+                    })
+                });
+                const data = await response.json();
+                if (data.success && data.data) {
+                    auth.setUser(data.data.user);
+                    auth.token = data.data.token;
+                    supabase.setToken(data.data.token);
+                    ui.showScreen('main-screen');
+                    app.initViews();
+                    ui.showToast('Bem-vindo!', 'success');
+                } else {
+                    ui.showToast(data.message || 'Erro ao fazer login', 'error');
+                }
+            } catch (e) {
+                console.error('[Auth] Erro:', e);
+                ui.showToast('Erro de conexão', 'error');
+            }
+        };
+
+        // Inicializa Google após DOM pronto
+        setTimeout(initGoogleLogin, 500);
+
         // Registro
         registerForm?.addEventListener('submit', async (e) => {
             e.preventDefault();
