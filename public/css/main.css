@@ -3,6 +3,11 @@
  * Mobile-First Design
  */
 
+/* Regra para ocultar elementos com classe .hidden */
+.hidden {
+    display: none !important;
+}
+
 /* ============================================
    VARIÁVEIS CSS — Design System Notion
    ============================================ */
