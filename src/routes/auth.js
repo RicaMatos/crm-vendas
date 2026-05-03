@@ -348,7 +348,8 @@ router.get('/verify', async (req, res) => {
                 user: {
                     id: decoded.sub,
                     email: decoded.email,
-                    nome: decoded.nome || ''
+                    nome: decoded.nome || '',
+                    nivel: decoded.nivel || 'Vendedor'
                 }
             }
         });
