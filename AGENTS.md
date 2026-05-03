@@ -13,3 +13,7 @@ When working with Supabase, use these skills for:
 - Realtime, Edge Functions, and Supabase CLI
 - Postgres performance optimization
 - Query performance and indexing
+
+## Instructions
+
+- Always respond in Portuguese (Brazil)
