@@ -16,10 +16,19 @@ router.use(authenticate);
  */
 router.get('/', async (req, res) => {
     try {
+        const { user_id } = req.query;
+        
+        const isAdmin = req.user.nivel === 'Admin';
+        let targetUserId = req.user.id;
+        
+        if (isAdmin && user_id) {
+            targetUserId = user_id;
+        }
+        
         const { data, error } = await supabase
             .from('crops')
             .select('*')
-            .eq('user_id', req.user.id)
+            .eq('user_id', targetUserId)
             .order('nome', { ascending: true });
 
         if (error) throw error;
@@ -37,15 +46,22 @@ router.get('/', async (req, res) => {
  */
 router.post('/', async (req, res) => {
     try {
-        const { nome, observacoes, cor } = req.body;
+        const { nome, observacoes, cor, user_id } = req.body;
 
         if (!nome) {
             return res.status(400).json({ success: false, message: 'Nome é obrigatório' });
         }
 
+        const isAdmin = req.user.nivel === 'Admin';
+        let targetUserId = req.user.id;
+        
+        if (isAdmin && user_id) {
+            targetUserId = user_id;
+        }
+
         const { data, error } = await supabase
             .from('crops')
-            .insert([{ user_id: req.user.id, nome, observacoes, cor }])
+            .insert([{ user_id: targetUserId, nome, observacoes, cor }])
             .select()
             .single();
 

@@ -20,9 +20,16 @@ router.use(authenticate);
  */
 router.get('/', async (req, res) => {
     try {
-        const { status, customerId } = req.query;
+        const { status, customerId, user_id } = req.query;
         
-        let pedidos = await orderService.listarPedidos(req.user.id);
+        const isAdmin = req.user.nivel === 'Admin';
+        let targetUserId = req.user.id;
+        
+        if (isAdmin && user_id) {
+            targetUserId = user_id;
+        }
+        
+        let pedidos = await orderService.listarPedidos(targetUserId);
 
         // Filtra por status se fornecido
         if (status) {
@@ -102,7 +109,14 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
     try {
-        const pedido = await orderService.criarPedido(req.user.id, req.body);
+        const isAdmin = req.user.nivel === 'Admin';
+        let targetUserId = req.user.id;
+        
+        if (isAdmin && req.body.user_id) {
+            targetUserId = req.body.user_id;
+        }
+        
+        const pedido = await orderService.criarPedido(targetUserId, req.body);
         
         res.status(201).json({
             success: true,

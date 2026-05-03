@@ -19,6 +19,7 @@ const productsRoutes = require('./src/routes/products');
 const cropsRoutes = require('./src/routes/crops');
 const tasksRoutes = require('./src/routes/tasks');
 const webhooksRoutes = require('./src/routes/webhooks');
+const usersRoutes = require('./src/routes/users');
 
 const app = express();
 const PORT = process.env.PORT || process.env.VERCEL_PORT || 3000;
@@ -76,6 +77,9 @@ app.use('/api/tasks', tasksRoutes);
 
 // Webhooks (n8n/WhatsApp)
 app.use('/api/webhooks', webhooksRoutes);
+
+// Usuários (Admin)
+app.use('/api/users', usersRoutes);
 
 // ============================================
 // ROTAS ESPECIAIS

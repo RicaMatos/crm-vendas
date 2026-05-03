@@ -216,6 +216,7 @@ class AuthManager {
             const data = await response.json();
             if (data.valid) {
                 this.setUser(data.data.user);
+                this.updateAdminMenu(data.data.user.nivel);
                 ui.showScreen('main-screen');
                 app.initViews();
                 return true;
@@ -226,6 +227,17 @@ class AuthManager {
 
         this.logout();
         return false;
+    }
+
+    updateAdminMenu(nivel) {
+        const navAdminItem = document.getElementById('nav-admin-item');
+        if (navAdminItem) {
+            if (nivel === 'Admin') {
+                navAdminItem.classList.remove('hidden');
+            } else {
+                navAdminItem.classList.add('hidden');
+            }
+        }
     }
 
     async login(email, password) {
@@ -359,6 +371,15 @@ class AuthManager {
         document.getElementById('user-avatar').textContent = initials.slice(0, 2);
         document.getElementById('user-name').textContent = user.nome || 'Usuário';
         document.getElementById('user-email').textContent = user.email || '';
+        
+        const navAdminItem = document.getElementById('nav-admin-item');
+        if (navAdminItem) {
+            if (user.nivel === 'Admin') {
+                navAdminItem.classList.remove('hidden');
+            } else {
+                navAdminItem.classList.add('hidden');
+            }
+        }
     }
 
     logout() {
@@ -879,6 +900,10 @@ class App {
             case 'tasks':
                 main.innerHTML = this.renderTasks();
                 this.setupTasksView();
+                break;
+            case 'admin':
+                main.innerHTML = '<div id="admin-view-container"></div>';
+                this.setupAdminView();
                 break;
             default:
                 main.innerHTML = '<p>View não encontrada</p>';
@@ -2236,6 +2261,20 @@ return `
     showCustomerModal(customer = null) {
         const crops = store.getCrops();
         const isEdit = !!customer;
+        const user = auth.user;
+        const isAdmin = user?.nivel === 'Admin';
+        
+        let adminUserSelect = '';
+        if (isAdmin && !isEdit) {
+            adminUserSelect = `
+                <div class="form-group">
+                    <label for="target-user-id">Cadastrar para usuário:</label>
+                    <select id="target-user-id" name="user_id" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary);">
+                        <option value="${user.id}">${user.nome} (eu)</option>
+                    </select>
+                </div>
+            `;
+        }
         
         const modalContent = `
             <div class="modal">
@@ -2249,7 +2288,7 @@ return `
                 </div>
                 <form id="customer-form" class="modal-body">
                     <input type="hidden" name="id" value="${customer?.id || ''}">
-                    
+                    ${adminUserSelect}
                     <div class="form-group">
                         <label for="nome">Nome *</label>
                         <input type="text" id="nome" name="nome" value="${customer?.nome || ''}" required>
@@ -2381,6 +2420,10 @@ return `
         
         ui.showModal(modalContent);
         
+        if (isAdmin && !isEdit) {
+            setTimeout(() => window.loadUsersForModal('target-user-id'), 100);
+        }
+        
         // Validação de CPF/CNPJ
         const documentoInput = document.getElementById('documento');
         documentoInput?.addEventListener('input', (e) => {
@@ -2414,6 +2457,8 @@ return `
         const isEdit = !!order;
         const customers = store.getCustomers();
         const products = store.getProducts();
+        const user = auth.user;
+        const isAdmin = user?.nivel === 'Admin';
         
         window.currentEditingOrder = order;
         
@@ -2422,13 +2467,24 @@ return `
             return;
         }
         
+        let adminUserSelect = '';
+        if (isAdmin && !isEdit) {
+            adminUserSelect = `
+                <div class="form-group">
+                    <label for="target-user-id">Cadastrar para usuário:</label>
+                    <select id="target-user-id" name="user_id" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary);">
+                        <option value="${user.id}">${user.nome} (eu)</option>
+                    </select>
+                </div>
+            `;
+        }
+        
         const modalTitle = isEdit ? 'Editar Pedido ' + (order?.numero_pedido || '#' + order?.id) : 'Novo Pedido';
         const dataPedido = order?.data ? new Date(order.data + 'T12:00:00').toLocaleDateString('pt-BR') : '';
         const tipoPagamentoMap = { avista: 'À Vista', parcelado: 'Parcelado', credito: 'Cartão de Crédito', recebimento: 'Recebimento', boleto: 'Boleto' };
         const tipoPagamento = tipoPagamentoMap[order?.tipo_pagamento] || order?.tipo_pagamento || 'Cartão de Crédito';
         const parcelas = order?.parcelas || 1;
         
-        // Data de hoje padrão para novos pedidos
         const hojeLocal = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
         
         const modalContent = `
@@ -2446,6 +2502,7 @@ return `
                 </div>
                 <form id="order-form" class="modal-body">
                     <input type="hidden" id="order_id" name="order_id" value="${order?.id || ''}">
+                    ${adminUserSelect}
                     <div class="form-group">
                         <label for="customer_id">Cliente *</label>
                         <select id="customer_id" name="customer_id" required>
@@ -2553,6 +2610,10 @@ return `
         
         ui.showModal(modalContent);
         
+        if (isAdmin && !isEdit) {
+            setTimeout(() => window.loadUsersForModal('target-user-id'), 100);
+        }
+        
         if (isEdit) {
             setTimeout(() => updateOrderTotal(), 100);
         }
@@ -2564,6 +2625,20 @@ return `
 
     showCropModal(crop = null) {
         const isEdit = !!crop;
+        const user = auth.user;
+        const isAdmin = user?.nivel === 'Admin';
+        
+        let adminUserSelect = '';
+        if (isAdmin && !isEdit) {
+            adminUserSelect = `
+                <div class="form-group">
+                    <label for="target-user-id">Cadastrar para usuário:</label>
+                    <select id="target-user-id" name="user_id" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary);">
+                        <option value="${user.id}">${user.nome} (eu)</option>
+                    </select>
+                </div>
+            `;
+        }
         
         const modalContent = `
             <div class="modal">
@@ -2577,7 +2652,7 @@ return `
                 </div>
                 <form id="crop-form" class="modal-body">
                     <input type="hidden" name="id" value="${crop?.id || ''}">
-                    
+                    ${adminUserSelect}
                     <div class="form-group">
                         <label for="nome">Nome *</label>
                         <input type="text" id="nome" name="nome" value="${crop?.nome || ''}" required>
@@ -2598,18 +2673,26 @@ return `
         
         ui.showModal(modalContent);
         
+        if (isAdmin && !isEdit) {
+            setTimeout(() => window.loadUsersForModal('target-user-id'), 100);
+        }
+        
         document.getElementById('crop-form')?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
             const rawData = Object.fromEntries(formData.entries());
             
-            // Converter IDs para números
+            const user = auth.user;
+            const isAdmin = user?.nivel === 'Admin';
+            
             const data = {};
             for (const [key, value] of Object.entries(rawData)) {
                 if (value !== '' && value !== null && value !== undefined) {
                     if (key === 'id') {
                         data[key] = parseInt(value);
-                    } else {
+                    } else if (key === 'user_id' && isAdmin && value !== user.id) {
+                        data[key] = value;
+                    } else if (key !== 'user_id') {
                         data[key] = value;
                     }
                 }
@@ -2649,6 +2732,20 @@ return `
 
     showProductModal(product = null) {
         const isEdit = !!product;
+        const user = auth.user;
+        const isAdmin = user?.nivel === 'Admin';
+        
+        let adminUserSelect = '';
+        if (isAdmin && !isEdit) {
+            adminUserSelect = `
+                <div class="form-group">
+                    <label for="target-user-id">Cadastrar para usuário:</label>
+                    <select id="target-user-id" name="user_id" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary);">
+                        <option value="${user.id}">${user.nome} (eu)</option>
+                    </select>
+                </div>
+            `;
+        }
         
         const modalContent = `
             <div class="modal">
@@ -2662,7 +2759,7 @@ return `
                 </div>
                 <form id="product-form" class="modal-body">
                     <input type="hidden" name="id" value="${product?.id || ''}">
-                    
+                    ${adminUserSelect}
                     <div class="form-group">
                         <label for="nome">Nome *</label>
                         <input type="text" id="nome" name="nome" value="${product?.nome || ''}" required>
@@ -2710,6 +2807,10 @@ return `
         
         ui.showModal(modalContent);
         
+        if (isAdmin && !isEdit) {
+            setTimeout(() => window.loadUsersForModal('target-user-id'), 100);
+        }
+        
         document.getElementById('product-form')?.addEventListener('submit', (e) => {
             this.handleProductSubmit(e, isEdit);
         });
@@ -2725,19 +2826,24 @@ return `
         const formData = new FormData(form);
         const rawData = Object.fromEntries(formData.entries());
         
-        // Processar dados - converter IDs para números e limpar vazios
+        const user = auth.user;
+        const isAdmin = user?.nivel === 'Admin';
+        
         const data = {};
         for (const [key, value] of Object.entries(rawData)) {
             if (value !== '' && value !== null && value !== undefined) {
-                if (key === 'id' || key === 'crop_id') {
-                    data[key] = parseInt(value);
+                if (key === 'id' || key === 'crop_id' || key === 'user_id') {
+                    data[key] = key === 'user_id' ? value : parseInt(value);
                 } else {
                     data[key] = value;
                 }
             }
         }
         
-        // Validar status
+        if (isAdmin && data.user_id === user.id) {
+            delete data.user_id;
+        }
+        
         const validStatuses = ['Lead', 'Indicação', 'Listagem', 'Contato Telefônico', 'Cliente de outro vendedor', 'Disparo'];
         if (data.status && !validStatuses.includes(data.status)) {
             data.status = 'Lead';
@@ -2883,6 +2989,10 @@ return `
         const todasPagas = parcelas_detalhes.length > 0 && parcelas_detalhes.every(p => p.status === 'pago' || p.status === 'Pago');
         let status_pagamento = todasPagas ? 'pago' : 'pendente';
 
+        const user = auth.user;
+        const isAdmin = user?.nivel === 'Admin';
+        const targetUserId = document.getElementById('target-user-id')?.value;
+        
         const orderData = {
             customerId: parseInt(customerId),
             data,
@@ -2894,6 +3004,10 @@ return `
             parcelas_detalhes,
             status_pagamento
         };
+        
+        if (isAdmin && targetUserId && targetUserId !== user.id) {
+            orderData.user_id = targetUserId;
+        }
         
         const endpoint = isEdit ? `orders/${orderId}` : 'orders';
         const method = isEdit ? 'PUT' : 'POST';
@@ -3014,13 +3128,26 @@ return `
         e.preventDefault();
         const form = e.target;
         const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
+        const rawData = Object.fromEntries(formData.entries());
         
-        data.quantidade = parseInt(data.quantidade) || 0;
-        data.custo = parseFloat(data.custo) || 0;
-        data.comissao = parseFloat(data.comissao) || 0;
+        const user = auth.user;
+        const isAdmin = user?.nivel === 'Admin';
         
-        const endpoint = isEdit ? `products/${data.id}` : 'products';
+        const data = {
+            quantidade: parseInt(rawData.quantidade) || 0,
+            custo: parseFloat(rawData.custo) || 0,
+            comissao: parseFloat(rawData.comissao) || 0
+        };
+        
+        if (rawData.nome) data.nome = rawData.nome;
+        if (rawData.unidade) data.unidade = rawData.unidade;
+        if (rawData.descricao) data.descricao = rawData.descricao;
+        
+        if (isAdmin && rawData.user_id && rawData.user_id !== user.id) {
+            data.user_id = rawData.user_id;
+        }
+        
+        const endpoint = isEdit ? `products/${rawData.id}` : 'products';
         const method = isEdit ? 'PUT' : 'POST';
         
         try {
@@ -3272,6 +3399,15 @@ return `
         chart.render();
     }
 
+    async setupAdminView() {
+        if (typeof adminView !== 'undefined') {
+            const container = document.getElementById('admin-view-container');
+            if (container) {
+                await adminView.render(container);
+            }
+        }
+    }
+
     initViews() {
         this.navigateTo('dashboard');
     }
@@ -3505,3 +3641,31 @@ window.generateInstallments = function() {
 
 // Inicia app
 document.addEventListener('DOMContentLoaded', () => app.init());
+
+// Função global para carregar usuários (usada nos modais de admin)
+window.loadUsersForModal = async function(selectId) {
+    const token = localStorage.getItem('CRM_TOKEN') || sessionStorage.getItem('CRM_TOKEN');
+    const user = JSON.parse(localStorage.getItem('CRM_USER') || localStorage.getItem('CRM_USER'));
+    
+    if (user?.nivel !== 'Admin') return [];
+    
+    try {
+        const res = await fetch(`${API_BASE}/users`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const users = data.data || [];
+        
+        const select = document.getElementById(selectId);
+        if (select) {
+            select.innerHTML = `<option value="${user.id}">${user.nome} (eu)</option>` +
+                users.filter(u => u.id !== user.id).map(u => 
+                    `<option value="${u.id}">${u.nome}</option>`
+                ).join('');
+        }
+        return users;
+    } catch (e) {
+        console.error('Erro ao carregar usuários:', e);
+        return [];
+    }
+};

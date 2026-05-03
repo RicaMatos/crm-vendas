@@ -64,6 +64,7 @@ function authenticate(req, res, next) {
     req.user = {
         id: userId,
         email: email,
+        nivel: decoded.nivel || 'Vendedor',
         token: token
     };
 

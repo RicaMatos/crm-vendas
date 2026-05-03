@@ -20,15 +20,22 @@ router.use(authenticate);
  */
 router.get('/', async (req, res) => {
     try {
-        const { busca, status } = req.query;
+        const { busca, status, user_id } = req.query;
         
-        console.log('[customers] userId da requisição:', req.user.id);
+        const isAdmin = req.user.nivel === 'Admin';
+        let targetUserId = req.user.id;
+        
+        if (isAdmin && user_id) {
+            targetUserId = user_id;
+        }
+        
+        console.log('[customers] userId da requisição:', targetUserId);
         
         let clientes;
         if (busca) {
-            clientes = await customerService.buscarClientes(req.user.id, busca);
+            clientes = await customerService.buscarClientes(targetUserId, busca);
         } else {
-            clientes = await customerService.listarClientes(req.user.id);
+            clientes = await customerService.listarClientes(targetUserId);
         }
         
         console.log('[customers] Clientes encontrados:', clientes?.length);
@@ -135,7 +142,14 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
     try {
-        const cliente = await customerService.criarCliente(req.user.id, req.body);
+        const isAdmin = req.user.nivel === 'Admin';
+        let targetUserId = req.user.id;
+        
+        if (isAdmin && req.body.user_id) {
+            targetUserId = req.body.user_id;
+        }
+        
+        const cliente = await customerService.criarCliente(targetUserId, req.body);
         
         res.status(201).json({
             success: true,

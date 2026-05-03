@@ -153,14 +153,14 @@ router.post('/login', async (req, res) => {
         
         console.log('[auth] Login Supabase OK, user:', authData.user);
 
-        // Gera token JWT para sessão
+        const nome = authData.user.user_metadata?.nome || '';
+        const nivel = authData.user.user_metadata?.nivel || 'Vendedor';
+
         const token = jwt.sign(
-            { sub: authData.user.id, email: authData.user.email },
+            { sub: authData.user.id, email: authData.user.email, nivel: nivel },
             JWT_SECRET,
             { expiresIn: '7d' }
         );
-
-        const nome = authData.user.user_metadata?.nome || '';
 
         res.json({
             success: true,
@@ -169,7 +169,8 @@ router.post('/login', async (req, res) => {
                 user: {
                     id: authData.user.id,
                     email: authData.user.email,
-                    nome: nome
+                    nome: nome,
+                    nivel: nivel
                 },
                 token
             }
@@ -233,6 +234,7 @@ router.post('/google', async (req, res) => {
         }
 
         const existingAuthUser = usersList?.users?.find(u => u.email === userEmail);
+        const nivel = existingAuthUser?.user_metadata?.nivel || 'Vendedor';
 
         // Gera token JWT不论 usuário auth existe ou não
         const token = jwt.sign(
@@ -240,6 +242,7 @@ router.post('/google', async (req, res) => {
                 sub: existingAuthUser?.id || userGoogleId, 
                 email: userEmail, 
                 nome: userName,
+                nivel: nivel,
                 provider: 'google',
                 avatar: userAvatar
             },
@@ -255,7 +258,7 @@ router.post('/google', async (req, res) => {
                     id: existingAuthUser?.id || userGoogleId,
                     email: userEmail,
                     nome: userName || userEmail.split('@')[0],
-                    nivel: 'Vendedor',
+                    nivel: nivel,
                     avatar: userAvatar
                 },
                 token
