@@ -269,6 +269,7 @@ class AuthManager {
             this.setUser(data.data.user);
             this.token = data.data.token;
             supabase.setToken(data.data.token);
+            sessionStorage.setItem('CRM_TOKEN', data.data.token);
             
             console.log('[Auth] Navegando para main-screen');
             ui.showScreen('main-screen');
@@ -307,6 +308,7 @@ class AuthManager {
             
             this.token = data.access_token;
             supabase.setToken(data.access_token);
+            sessionStorage.setItem('CRM_TOKEN', data.access_token);
             
             // Buscar dados do usuário
             const userResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
@@ -320,7 +322,8 @@ class AuthManager {
             this.setUser({
                 id: userData.id,
                 email: userData.email,
-                nome: userData.user_metadata?.nome || ''
+                nome: userData.user_metadata?.nome || '',
+                nivel: 'Vendedor'
             });
             
             ui.showScreen('main-screen');

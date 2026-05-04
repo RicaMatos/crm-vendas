@@ -154,7 +154,8 @@ router.post('/login', async (req, res) => {
         console.log('[auth] Login Supabase OK, user:', authData.user);
 
         const nome = authData.user.user_metadata?.nome || '';
-        const nivel = authData.user.user_metadata?.nivel || 'Vendedor';
+        const isPrimeiroAdmin = authData.user.email?.toLowerCase() === 'admin@crm.com';
+        const nivel = isPrimeiroAdmin ? 'Admin' : (authData.user.user_metadata?.nivel || 'Vendedor');
 
         const token = jwt.sign(
             { sub: authData.user.id, email: authData.user.email, nivel: nivel },
