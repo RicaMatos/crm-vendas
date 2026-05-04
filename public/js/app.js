@@ -2401,12 +2401,12 @@ return `
                     </div>
                     
                     <div class="form-row">
-                        <div class="form-group">
+                        <div class="form-group" style="flex: 2;">
                             <label for="data_aniversario">Data de Aniversário</label>
-                            <input type="date" id="data_aniversario" name="data_aniversario" value="${customer?.data_aniversario || ''}">
+                            <input type="date" id="data_aniversario" name="data_aniversario" value="${customer?.data_aniversario || ''}" style="width: 100%;">
                         </div>
-                        <div class="form-group">
-                            <label for="lembrete_aniversario" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <div class="form-group" style="flex: 1; display: flex; align-items: flex-end; padding-bottom: 12px;">
+                            <label for="lembrete_aniversario" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
                                 <input type="checkbox" id="lembrete_aniversario" name="lembrete_aniversario" ${customer?.lembrete_aniversario ? 'checked' : ''}>
                                 <span>Lembrete automático</span>
                             </label>
