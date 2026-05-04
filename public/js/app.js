@@ -2416,11 +2416,11 @@ return `
                     ${isEdit ? `
                     <div id="observations-section" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color);">
                         <h4 style="margin: 0 0 12px 0; font-size: 14px; color: var(--text-secondary);">Últimos Contatos</h4>
-                        <div id="observations-list" style="max-height: 300px; overflow-y: auto; margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: var(--bg-tertiary);">
+                        <div id="observations-list" style="max-height: 150px; overflow-y: auto; margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: var(--bg-tertiary);">
                             <div style="text-align: center; color: var(--text-secondary); font-size: 13px; padding: 10px;">Carregando...</div>
                         </div>
                         <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                            <input type="text" id="new-observation" placeholder="Nova observação..." style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
+                            <textarea id="new-observation" placeholder="Nova observação..." style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); resize: none; height: 80px;">
                         </div>
                         <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px; padding: 8px; background: var(--bg-tertiary); border-radius: 8px;">
                             <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem;">
