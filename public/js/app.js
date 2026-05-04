@@ -561,6 +561,7 @@ class App {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 const view = item.dataset.view;
+                console.log('[nav] Clicked:', view);
                 this.navigateTo(view);
             });
         });
