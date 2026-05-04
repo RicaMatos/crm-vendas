@@ -66,10 +66,12 @@ function formatarBRL(valor) {
 
 export const adminView = {
     async render(container) {
+        console.log('[Admin] render called');
         container.innerHTML = '<div class="loading">Carregando...</div>';
         
         try {
             const users = await fetchUsers();
+            console.log('[Admin] users:', users);
             
             const usersWithStats = await Promise.all(
                 users.map(async user => ({
@@ -77,12 +79,13 @@ export const adminView = {
                     stats: await fetchUserStats(user.id)
                 }))
             );
+            console.log('[Admin] usersWithStats:', usersWithStats);
 
             container.innerHTML = this.renderUsersList(usersWithStats);
             this.bindEvents();
         } catch (error) {
             console.error('[Admin] Erro ao carregar:', error);
-            container.innerHTML = '<div class="error">Erro ao carregar dados</div>';
+            container.innerHTML = '<div class="error">Erro ao carregar dados: ' + error.message + '</div>';
         }
     },
 
