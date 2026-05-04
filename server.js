@@ -21,6 +21,7 @@ const tasksRoutes = require('./src/routes/tasks');
 const webhooksRoutes = require('./src/routes/webhooks');
 const usersRoutes = require('./src/routes/users');
 const interactionsRoutes = require('./src/routes/interactions');
+const importRoutes = require('./src/routes/import');
 
 const app = express();
 const PORT = process.env.PORT || process.env.VERCEL_PORT || 3000;
@@ -84,6 +85,9 @@ app.use('/api/users', usersRoutes);
 
 // Observações de clientes
 app.use('/api/interactions', interactionsRoutes);
+
+// Importação de clientes (arquivos + IA)
+app.use('/api/import', importRoutes);
 
 // ============================================
 // ROTAS ESPECIAIS

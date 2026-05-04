@@ -908,6 +908,14 @@ class App {
                 main.innerHTML = '<div id="admin-view-container"></div>';
                 this.setupAdminView();
                 break;
+            case 'import':
+                main.innerHTML = this.renderImport();
+                this.setupImportView();
+                break;
+            case 'import':
+                main.innerHTML = this.renderImport();
+                this.setupImportView();
+                break;
             default:
                 main.innerHTML = '<p>View não encontrada</p>';
         }
@@ -3452,6 +3460,358 @@ return `
             if (container) {
                 await adminView.render(container);
             }
+        }
+    }
+
+    // ============================================
+    // IMPORTAR CLIENTES
+    // ============================================
+
+    renderImport() {
+        return `
+        <div class="page-container">
+            <div class="page-header">
+                <h1><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Importar Clientes</h1>
+                <p class="page-subtitle">Faça upload de um arquivo com dados de clientes. A IA extrai automaticamente as informações.</p>
+            </div>
+
+            <div class="import-container">
+                <!-- Upload Area -->
+                <div class="upload-area" id="upload-area">
+                    <div class="upload-content">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--text-muted);">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <p class="upload-title">Arraste o arquivo aqui ou clique para selecionar</p>
+                        <p class="upload-hint">Formatos aceitos: CSV, XLSX, PDF, TXT (máx. 10MB)</p>
+                    </div>
+                    <input type="file" id="file-input" accept=".csv,.xlsx,.xls,.pdf,.txt" hidden>
+                </div>
+
+                <!-- Loading -->
+                <div class="import-loading hidden" id="import-loading">
+                    <div class="loading-spinner"></div>
+                    <p id="import-status">Enviando arquivo para análise...</p>
+                </div>
+
+                <!-- Results -->
+                <div class="import-results hidden" id="import-results">
+                    <div class="results-header">
+                        <div class="results-summary">
+                            <span class="results-count" id="results-count">0</span>
+                            <span class="results-label">cliente(s) encontrados</span>
+                            <span class="results-file" id="results-file"></span>
+                        </div>
+                        <div class="results-actions">
+                            <button class="btn btn-secondary" id="import-reset-btn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                                Novo Arquivo
+                            </button>
+                            <button class="btn btn-primary" id="import-confirm-btn" disabled>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                                Importar Clientes
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-wrapper" id="import-table-wrapper" style="overflow-x: auto;">
+                        <table class="table" id="import-preview-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;">
+                                        <input type="checkbox" id="select-all-import" checked>
+                                    </th>
+                                    <th>Nome</th>
+                                    <th>Documento</th>
+                                    <th>WhatsApp</th>
+                                    <th>Email</th>
+                                    <th>Cidade/UF</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="import-preview-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="results-footer">
+                        <p id="import-error-count" class="import-error-count hidden"></p>
+                    </div>
+                </div>
+
+                <!-- Erro -->
+                <div class="import-error hidden" id="import-error">
+                    <p id="import-error-message"></p>
+                    <button class="btn btn-secondary" id="import-error-btn">Tentar Novamente</button>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    setupImportView() {
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const importLoading = document.getElementById('import-loading');
+        const importResults = document.getElementById('import-results');
+        const importError = document.getElementById('import-error');
+        const importErrorMsg = document.getElementById('import-error-message');
+        const importStatus = document.getElementById('import-status');
+        const previewBody = document.getElementById('import-preview-body');
+        const resultsCount = document.getElementById('results-count');
+        const resultsFile = document.getElementById('results-file');
+        const confirmBtn = document.getElementById('import-confirm-btn');
+        const resetBtn = document.getElementById('import-reset-btn');
+        const selectAll = document.getElementById('select-all-import');
+        const errorBtn = document.getElementById('import-error-btn');
+
+        let clientesData = [];
+
+        // === EVENTOS DE UPLOAD ===
+
+        function resetView() {
+            importResults.classList.add('hidden');
+            importError.classList.add('hidden');
+            importLoading.classList.add('hidden');
+            uploadArea.classList.remove('hidden');
+            fileInput.value = '';
+            clientesData = [];
+        }
+
+        // Clique na área de upload
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                processFile(e.target.files[0]);
+            }
+        });
+
+        // === PROCESSAMENTO ===
+
+        async function processFile(file) {
+            // Valida extensão
+            const validExts = ['.csv', '.xlsx', '.xls', '.pdf', '.txt'];
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+            if (!validExts.includes(ext)) {
+                showError(`Formato não suportado: ${ext}. Use CSV, XLSX, PDF ou TXT.`);
+                return;
+            }
+
+            // Valida tamanho
+            if (file.size > 10 * 1024 * 1024) {
+                showError('Arquivo muito grande. Limite máximo: 10MB.');
+                return;
+            }
+
+            uploadArea.classList.add('hidden');
+            importLoading.classList.remove('hidden');
+            importError.classList.add('hidden');
+            importStatus.textContent = 'Enviando arquivo para análise...';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                importStatus.textContent = 'IA está extraindo os dados...';
+
+                const token = auth.token || localStorage.getItem('CRM_TOKEN') || sessionStorage.getItem('CRM_TOKEN');
+
+                const response = await fetch(`${API_BASE}/import/customers/preview`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    showError(result.message || 'Erro ao processar arquivo');
+                    return;
+                }
+
+                const data = result.data;
+                clientesData = data.clientes || [];
+
+                if (clientesData.length === 0) {
+                    showError('Nenhum cliente identificado no arquivo. Verifique o formato dos dados.');
+                    return;
+                }
+
+                // Renderiza preview
+                importLoading.classList.add('hidden');
+                renderPreview(clientesData, file.name);
+                importResults.classList.remove('hidden');
+
+            } catch (error) {
+                console.error('[import] Erro:', error);
+                showError(error.message || 'Erro de conexão ao processar arquivo');
+            }
+        }
+
+        function renderPreview(clientes, filename) {
+            resultsCount.textContent = clientes.length;
+            resultsFile.textContent = `Arquivo: ${filename}`;
+            confirmBtn.disabled = false;
+
+            previewBody.innerHTML = clientes.map((c, i) => {
+                const cidadeUf = [c.cidade, c.uf].filter(Boolean).join('/') || '-';
+                const status = validarStatusExibicao(c.status);
+                const statusClass = status ? `status-badge status-${status.toLowerCase()}` : '';
+                return `
+                <tr>
+                    <td><input type="checkbox" class="import-row-checkbox" data-index="${i}" checked></td>
+                    <td><strong>${escapeHtml(c.nome || '-')}</strong></td>
+                    <td>${escapeHtml(formatarDocumento(c.documento))}</td>
+                    <td>${escapeHtml(formatarWhatsApp(c.whatsapp))}</td>
+                    <td>${escapeHtml(c.email || '-')}</td>
+                    <td>${escapeHtml(cidadeUf)}</td>
+                    <td><span class="${statusClass}">${status || '-'}</span></td>
+                </tr>`;
+            }).join('');
+
+            // Atualiza contagem ao marcar/desmarcar
+            document.querySelectorAll('.import-row-checkbox').forEach(cb => {
+                cb.addEventListener('change', updateConfirmButton);
+            });
+
+            selectAll.addEventListener('change', () => {
+                document.querySelectorAll('.import-row-checkbox').forEach(cb => {
+                    cb.checked = selectAll.checked;
+                });
+                updateConfirmButton();
+            });
+
+            updateConfirmButton();
+        }
+
+        function updateConfirmButton() {
+            const checked = document.querySelectorAll('.import-row-checkbox:checked').length;
+            confirmBtn.textContent = checked > 0
+                ? `Importar ${checked} cliente${checked > 1 ? 's' : ''}`
+                : 'Nenhum cliente selecionado';
+            confirmBtn.disabled = checked === 0;
+        }
+
+        function showError(message) {
+            importLoading.classList.add('hidden');
+            importResults.classList.add('hidden');
+            uploadArea.classList.add('hidden');
+            importError.classList.remove('hidden');
+            importErrorMsg.textContent = message;
+        }
+
+        // === BOTÕES ===
+
+        resetBtn.addEventListener('click', resetView);
+
+        errorBtn.addEventListener('click', resetView);
+
+        confirmBtn.addEventListener('click', async () => {
+            const selectedIndices = [];
+            document.querySelectorAll('.import-row-checkbox:checked').forEach(cb => {
+                selectedIndices.push(parseInt(cb.dataset.index));
+            });
+
+            if (selectedIndices.length === 0) return;
+
+            const token = auth.token || localStorage.getItem('CRM_TOKEN') || sessionStorage.getItem('CRM_TOKEN');
+            const clientesParaImportar = selectedIndices.map(i => clientesData[i]);
+
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<div class="loading-spinner" style="width: 16px; height: 16px; border-width: 2px; margin: 0 auto;"></div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/import/customers/confirm`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ clientes: clientesParaImportar })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    ui.showToast(result.message || 'Clientes importados com sucesso!', 'success');
+
+                    // Recarrega dados
+                    if (typeof store !== 'undefined') {
+                        await store.fetchAll();
+                    }
+
+                    resetView();
+                } else {
+                    ui.showToast(result.message || 'Erro ao importar clientes', 'error');
+                    confirmBtn.disabled = false;
+                    updateConfirmButton();
+                }
+            } catch (error) {
+                ui.showToast('Erro de conexão ao importar', 'error');
+                confirmBtn.disabled = false;
+                updateConfirmButton();
+            }
+        });
+
+        // === UTILITÁRIOS ===
+
+        function escapeHtml(text) {
+            if (!text) return '-';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatarDocumento(doc) {
+            if (!doc) return '-';
+            const nums = String(doc).replace(/\D/g, '');
+            if (nums.length === 11) {
+                return nums.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+            }
+            if (nums.length === 14) {
+                return nums.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+            }
+            return String(doc);
+        }
+
+        function formatarWhatsApp(whats) {
+            if (!whats) return '-';
+            const nums = String(whats).replace(/\D/g, '');
+            if (nums.length === 13) {
+                return `+${nums[0]} (${nums.substring(1,3)}) ${nums.substring(3,7)}-${nums.substring(7)}`;
+            }
+            if (nums.length === 12) {
+                return `+${nums.substring(0,2)} (${nums.substring(2,4)}) ${nums.substring(4,8)}-${nums.substring(8)}`;
+            }
+            if (nums.length === 11) {
+                return `(${nums.substring(0,2)}) ${nums.substring(2,7)}-${nums.substring(7)}`;
+            }
+            return String(whats);
+        }
+
+        function validarStatusExibicao(status) {
+            if (!status) return null;
+            const statusValidos = ['Lead', 'Prospect', 'Cliente', 'Inativo'];
+            const s = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+            return statusValidos.includes(s) ? s : 'Lead';
         }
     }
 
