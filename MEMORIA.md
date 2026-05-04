@@ -49,6 +49,8 @@
 | 01/05/2026 | Ajuste de largura das barras do gráfico de comissões |
 | 01/05/2026 | Correção na regra de payday (datas de corte) |
 | 01/05/2026 | Correção: projetado = pago + pendente |
+| 03/05/2026 | Admin tem acesso global a produtos e culturas |
+| 04/05/2026 | Corrige token não salvo no sessionStorage |
 
 ## Histórico de Alterações
 
@@ -61,6 +63,8 @@
 - 28/04/2026 - Corrigido domínio Supabase (zgtakbznmuxkibxybdky)
 - 28/04/2026 - Fix: tratamento de email não confirmado
 - 28/04/2026 - Aplicação de RLS e políticas no Supabase
+- 03/05/2026 - Admin global: funções SQL admin_get_all_products e admin_get_all_crops
+- 04/05/2026 - Admin token salvo no sessionStorage
 
 ## Situação Atual do Deploy
 
