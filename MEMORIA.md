@@ -67,12 +67,14 @@
 - 04/05/2026 - Admin token salvo no sessionStorage
 - 04/05/2026 - Correções no formulário de clientes (botões duplicados, data aniversário)
 - 04/05/2026 - Adição do sistema de observações de clientes
+- 04/05/2026 - Checkbox criar lembrete na agenda ao salvar observação
+- 04/05/2026 - Diferenciação de cores: roxo aniversários, laranja observações
 
 ## Situação Atual do Deploy
 
 ### GitHub ✅
 - Repositório: https://github.com/RicaMatos/crm-vendas
-- ÚLTIMO COMMIT: 4709ea6 - Corrige logica: projetado = pago + pendente
+- ÚLTIMO COMMIT: 44ec2f0 - Diferencia cores de tarefas: roxo aniversario, laranja observacao
 - STATUS: ✅ Online
 
 ### Render ✅
