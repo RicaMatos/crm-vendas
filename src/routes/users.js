@@ -285,3 +285,69 @@ router.delete('/:id', async (req, res) => {
 });
 
 module.exports = router;
+
+// Rota especial para deletar usuário por email
+router.post('/delete-by-email', async (req, res) => {
+    try {
+        if (!isAdmin(req)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Acesso restrito a administradores'
+            });
+        }
+
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email é obrigatório'
+            });
+        }
+
+        // Buscar usuário pelo email
+        const { data: usersList, error: listError } = await supabase.auth.admin.listUsers();
+        
+        if (listError) {
+            return res.status(500).json({
+                success: false,
+                message: 'Erro ao buscar usuários'
+            });
+        }
+
+        const user = usersList.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuário não encontrado'
+            });
+        }
+
+        // Não pode excluir o admin principal
+        if (isPrimeiroAdmin(user.email)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Não é possível excluir o administrador principal'
+            });
+        }
+
+        const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id);
+
+        if (deleteError) {
+            return res.status(400).json({
+                success: false,
+                message: 'Erro ao excluir usuário'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: `Usuário ${email} excluído com sucesso`
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Erro interno'
+        });
+    }
+});
