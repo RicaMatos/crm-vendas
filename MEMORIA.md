@@ -51,6 +51,10 @@
 | 01/05/2026 | Correção: projetado = pago + pendente |
 | 03/05/2026 | Admin tem acesso global a produtos e culturas |
 | 04/05/2026 | Corrige token não salvo no sessionStorage |
+| 04/05/2026 | Implementação de Importar Clientes com IA Gemini |
+| 04/05/2026 | Upload de arquivos (CSV, XLSX, PDF, TXT) com extração automática |
+| 04/05/2026 | Preview de dados extraídos com seleção para importação |
+| 04/05/2026 | Configuração GEMINI_API_KEY no Render |
 
 ## Histórico de Alterações
 
@@ -74,7 +78,7 @@
 
 ### GitHub ✅
 - Repositório: https://github.com/RicaMatos/crm-vendas
-- ÚLTIMO COMMIT: 44ec2f0 - Diferencia cores de tarefas: roxo aniversario, laranja observacao
+- ÚLTIMO COMMIT: b2541cc - feat: adiciona importação de clientes com IA Gemini
 - STATUS: ✅ Online
 
 ### Render ✅
