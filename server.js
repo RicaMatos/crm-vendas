@@ -106,17 +106,6 @@ app.get('/api/debug', (req, res) => {
     });
 });
 
-// Debug - testar RPC admin
-app.get('/api/debug/test-products', async (req, res) => {
-    const { supabase } = require('./src/config/supabaseClient');
-    try {
-        const result = await supabase.rpc('admin_get_all_products');
-        res.json({ success: true, count: result.data?.length || 0, data: result.data, error: result.error });
-    } catch (err) {
-        res.json({ success: false, error: err.message });
-    }
-});
-
 // ============================================
 // TRATAMENTO DE ERROS
 // ============================================

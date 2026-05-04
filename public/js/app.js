@@ -368,8 +368,6 @@ class AuthManager {
 
     setUser(user) {
         this.user = user;
-        console.log('[setUser] user received:', user);
-        console.log('[setUser] nivel:', user.nivel);
         localStorage.setItem('CRM_USER', JSON.stringify(user));
         
         const initials = user.nome?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
@@ -378,9 +376,7 @@ class AuthManager {
         document.getElementById('user-email').textContent = user.email || '';
         
         const navAdminItem = document.getElementById('nav-admin-item');
-        console.log('[setUser] navAdminItem:', navAdminItem);
         if (navAdminItem) {
-            console.log('[setUser] user.nivel === Admin:', user.nivel === 'Admin');
             if (user.nivel === 'Admin') {
                 navAdminItem.classList.remove('hidden');
             } else {
