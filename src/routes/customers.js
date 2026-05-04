@@ -29,17 +29,12 @@ router.get('/', async (req, res) => {
             targetUserId = user_id;
         }
         
-        console.log('[customers] userId da requisição:', targetUserId);
-        
         let clientes;
         if (busca) {
             clientes = await customerService.buscarClientes(targetUserId, busca);
         } else {
             clientes = await customerService.listarClientes(targetUserId);
         }
-        
-        console.log('[customers] Clientes encontrados:', clientes?.length);
-        console.log('[customers] Primeiros clientes:', clientes?.slice(0, 2));
 
         // Filtra por status se fornecido
         if (status) {

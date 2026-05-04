@@ -7,19 +7,10 @@ const API_BASE = '/api';
 
 async function fetchUsers() {
     const token = localStorage.getItem('CRM_TOKEN') || sessionStorage.getItem('CRM_TOKEN');
-    console.log('[admin] Token exists:', !!token);
-    console.log('[admin] Token:', token?.substring(0, 20));
-    
-    if (!token) {
-        console.log('[admin] No token found!');
-    }
-    
     const res = await fetch(`${API_BASE}/users`, {
         headers: { 'Authorization': `Bearer ${token}` }
     });
-    console.log('[admin] Response status:', res.status);
     const data = await res.json();
-    console.log('[admin] Response data:', data);
     return data.data || [];
 }
 
@@ -72,12 +63,10 @@ function formatarBRL(valor) {
 
 export const adminView = {
     async render(container) {
-        console.log('[Admin] render called');
         container.innerHTML = '<div class="loading">Carregando...</div>';
         
         try {
             const users = await fetchUsers();
-            console.log('[Admin] users:', users);
             
             const usersWithStats = await Promise.all(
                 users.map(async user => ({
@@ -85,13 +74,12 @@ export const adminView = {
                     stats: await fetchUserStats(user.id)
                 }))
             );
-            console.log('[Admin] usersWithStats:', usersWithStats);
 
             container.innerHTML = this.renderUsersList(usersWithStats);
             this.bindEvents();
         } catch (error) {
             console.error('[Admin] Erro ao carregar:', error);
-            container.innerHTML = '<div class="error">Erro ao carregar dados: ' + error.message + '</div>';
+            container.innerHTML = '<div class="error">Erro ao carregar dados</div>';
         }
     },
 

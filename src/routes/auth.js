@@ -107,51 +107,18 @@ router.post('/login', async (req, res) => {
             });
         }
 
-        // Autentica com Supabase Auth
-        console.log('[auth] Tentando login com Supabase:', email);
-        
+// Autentica com Supabase Auth
         const { data: authData, error: authError } = await supabaseAnon.auth.signInWithPassword({
             email,
             password
         });
 
         if (authError) {
-            console.error('[auth] Erro no login Supabase:', authError);
-            console.error('[auth] Error message:', authError.message);
-            console.error('[auth] Error status:', authError.status);
-            
-            if (authError.message.includes('Invalid login') || authError.message.includes('invalid')) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Usuário não cadastrado ou senha incorreta. Verifique os dados ou crie uma conta.'
-                });
-            }
-            
-            if (authError.message.includes('Email not confirmed')) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Confirme seu email antes de fazer login. Verifique sua caixa de mensagens.'
-                });
-            }
-            
-            // Log detalhado do erro
-            console.error('[auth] Tipo de erro:', authError.name);
-            
             return res.status(401).json({
                 success: false,
-                message: 'Erro ao fazer login: ' + authError.message
+                message: 'Usuário não cadastrado ou senha incorreta. Verifique os dados ou crie uma conta.'
             });
         }
-
-        // Verifica se o usuário existe (email não confirmado retorna user: null)
-        if (!authData.user) {
-            return res.status(401).json({
-                success: false,
-                message: 'Confirme seu email antes de fazer login.'
-            });
-        }
-        
-        console.log('[auth] Login Supabase OK, user:', authData.user);
 
         const nome = authData.user.user_metadata?.nome || '';
         const isPrimeiroAdmin = authData.user.email?.toLowerCase() === 'admin@crm.com';
@@ -224,8 +191,6 @@ router.post('/google', async (req, res) => {
                 message: 'Email e Google ID são obrigatório'
             });
         }
-
-        console.log('[auth] Login com Google:', userEmail);
 
         // Busca usuário no Supabase Auth
         let { data: usersList, error: listError } = await supabase.auth.admin.listUsers();
