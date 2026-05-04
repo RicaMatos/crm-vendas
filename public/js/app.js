@@ -2419,10 +2419,17 @@ return `
                         <div id="observations-list" style="max-height: 150px; overflow-y: auto; margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: var(--bg-tertiary);">
                             <div style="text-align: center; color: var(--text-secondary); font-size: 13px; padding: 10px;">Carregando...</div>
                         </div>
-                        <div style="display: flex; gap: 8px;">
+                        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                             <input type="text" id="new-observation" placeholder="Nova observação..." style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
-                            <button type="button" class="btn btn-primary" onclick="saveObservation(${customer?.id || 0})" style="white-space: nowrap;">Salvar Observação</button>
                         </div>
+                        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px; padding: 8px; background: var(--bg-tertiary); border-radius: 8px;">
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem;">
+                                <input type="checkbox" id="create-task-obs">
+                                <span>Criar lembrete na agenda</span>
+                            </label>
+                            <input type="datetime-local" id="task-datetime-obs" style="padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.85rem;">
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="saveObservation(${customer?.id || 0})" style="white-space: nowrap;">Salvar Observação</button>
                     </div>
 ` : ''}
                     
@@ -3745,6 +3752,9 @@ window.saveObservation = async function(customerId) {
         return;
     }
     
+    const createTask = document.getElementById('create-task-obs')?.checked;
+    const taskDatetime = document.getElementById('task-datetime-obs')?.value;
+    
     const token = localStorage.getItem('CRM_TOKEN') || sessionStorage.getItem('CRM_TOKEN');
     try {
         const res = await fetch(`${API_BASE}/interactions`, {
@@ -3758,9 +3768,33 @@ window.saveObservation = async function(customerId) {
         const data = await res.json();
         
         if (data.success) {
+            if (createTask && taskDatetime) {
+                const cliente = store.getCustomers().find(c => c.id === customerId);
+                const taskRes = await fetch(`${API_BASE}/tasks`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        titulo: 'Observação: ' + observacao.substring(0, 50),
+                        descricao: observacao,
+                        data: taskDatetime,
+                        cliente_id: customerId,
+                        cliente_nome: cliente?.nome || ''
+                    })
+                });
+                const taskData = await taskRes.json();
+                if (taskData.success) {
+                    ui.showToast('Observação e lembrete salvos!', 'success');
+                } else {
+                    ui.showToast('Observação salva, mas erro ao criar lembrete', 'warning');
+                }
+            } else {
+                ui.showToast('Observação salva!', 'success');
+            }
             input.value = '';
             window.loadObservations(customerId);
-            ui.showToast('Observação salva!', 'success');
         } else {
             ui.showToast(data.message || 'Erro ao salvar', 'error');
         }
