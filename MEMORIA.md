@@ -65,6 +65,8 @@
 - 28/04/2026 - Aplicação de RLS e políticas no Supabase
 - 03/05/2026 - Admin global: funções SQL admin_get_all_products e admin_get_all_crops
 - 04/05/2026 - Admin token salvo no sessionStorage
+- 04/05/2026 - Correções no formulário de clientes (botões duplicados, data aniversário)
+- 04/05/2026 - Adição do sistema de observações de clientes
 
 ## Situação Atual do Deploy
 
@@ -73,9 +75,8 @@
 - ÚLTIMO COMMIT: 4709ea6 - Corrige logica: projetado = pago + pendente
 - STATUS: ✅ Online
 
-### Vercel ✅
-- URL: https://crm-ne-xus.vercel.app
-- ÚLTIMO COMMIT: fe8c6fe
+### Render ✅
+- URL: https://crm-vendas.onrender.com
 - STATUS: ✅ Online (deploy automático)
 
 ### Supabase ✅

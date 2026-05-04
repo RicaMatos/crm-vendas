@@ -2405,13 +2405,26 @@ return `
                             <label for="data_aniversario">Data de Aniversário</label>
                             <input type="date" id="data_aniversario" name="data_aniversario" value="${customer?.data_aniversario || ''}">
                         </div>
-                        <div class="form-group" style="display: flex; align-items: center; padding-top: 24px;">
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <div class="form-group">
+                            <label for="lembrete_aniversario" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
                                 <input type="checkbox" id="lembrete_aniversario" name="lembrete_aniversario" ${customer?.lembrete_aniversario ? 'checked' : ''}>
                                 <span>Lembrete automático</span>
                             </label>
                         </div>
                     </div>
+                    
+                    ${isEdit ? `
+                    <div id="observations-section" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                        <h4 style="margin: 0 0 12px 0; font-size: 14px; color: var(--text-secondary);">Últimos Contatos</h4>
+                        <div id="observations-list" style="max-height: 150px; overflow-y: auto; margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: var(--bg-tertiary);">
+                            <div style="text-align: center; color: var(--text-secondary); font-size: 13px; padding: 10px;">Carregando...</div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="new-observation" placeholder="Nova observação..." style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
+                            <button type="button" class="btn btn-primary" onclick="saveObservation(${customer?.id || 0})" style="white-space: nowrap;">Salvar</button>
+                        </div>
+                    </div>
+` : ''}
                     
                     <div class="btn-group">
                         <button type="button" class="btn btn-secondary" onclick="ui.closeModal()">Cancelar</button>
@@ -2422,6 +2435,11 @@ return `
         `;
         
         ui.showModal(modalContent);
+        
+        // Carregar observações do cliente
+        if (customer?.id) {
+            setTimeout(() => window.loadObservations(customer.id), 100);
+        }
         
         if (isAdmin && !isEdit) {
             setTimeout(() => window.loadUsersForModal('target-user-id'), 100);
@@ -3670,5 +3688,84 @@ window.loadUsersForModal = async function(selectId) {
     } catch (e) {
         console.error('Erro ao carregar usuários:', e);
         return [];
+    }
+};
+
+// Função global para carregar observações do cliente
+window.loadObservations = async function(customerId) {
+    if (!customerId) {
+        document.getElementById('observations-list').innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 13px; padding: 10px;">Cliente não selecionado</div>';
+        return;
+    }
+    
+    const token = localStorage.getItem('CRM_TOKEN') || sessionStorage.getItem('CRM_TOKEN');
+    try {
+        const res = await fetch(`${API_BASE}/interactions?customer_id=${customerId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        const list = document.getElementById('observations-list');
+        
+        if (!data.data || data.data.length === 0) {
+            list.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 13px; padding: 10px;">Nenhuma observação registrada</div>';
+            return;
+        }
+        
+        list.innerHTML = data.data.map(obs => {
+            const dataFormatada = new Date(obs.data).toLocaleString('pt-BR', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            return `<div style="padding: 8px; border-bottom: 1px solid var(--border-color); font-size: 13px;">
+                <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">${dataFormatada}</div>
+                <div style="color: var(--text-primary);">${obs.observacao || ''}</div>
+            </div>`;
+        }).join('');
+    } catch (e) {
+        console.error('Erro ao carregar observações:', e);
+    }
+};
+
+// Função global para salvar observação
+window.saveObservation = async function(customerId) {
+    if (!customerId) {
+        ui.showToast('Cliente não selecionado', 'error');
+        return;
+    }
+    
+    const input = document.getElementById('new-observation');
+    const observacao = input.value.trim();
+    
+    if (!observacao) {
+        ui.showToast('Digite uma observação', 'warning');
+        return;
+    }
+    
+    const token = localStorage.getItem('CRM_TOKEN') || sessionStorage.getItem('CRM_TOKEN');
+    try {
+        const res = await fetch(`${API_BASE}/interactions`, {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ customer_id: customerId, observacao })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            input.value = '';
+            window.loadObservations(customerId);
+            ui.showToast('Observação salva!', 'success');
+        } else {
+            ui.showToast(data.message || 'Erro ao salvar', 'error');
+        }
+    } catch (e) {
+        console.error('Erro ao salvar observação:', e);
+        ui.showToast('Erro ao salvar', 'error');
     }
 };

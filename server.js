@@ -20,6 +20,7 @@ const cropsRoutes = require('./src/routes/crops');
 const tasksRoutes = require('./src/routes/tasks');
 const webhooksRoutes = require('./src/routes/webhooks');
 const usersRoutes = require('./src/routes/users');
+const interactionsRoutes = require('./src/routes/interactions');
 
 const app = express();
 const PORT = process.env.PORT || process.env.VERCEL_PORT || 3000;
@@ -80,6 +81,9 @@ app.use('/api/webhooks', webhooksRoutes);
 
 // Usuários (Admin)
 app.use('/api/users', usersRoutes);
+
+// Observações de clientes
+app.use('/api/interactions', interactionsRoutes);
 
 // ============================================
 // ROTAS ESPECIAIS
