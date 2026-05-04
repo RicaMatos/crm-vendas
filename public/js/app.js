@@ -2427,7 +2427,7 @@ return `
                                 <input type="checkbox" id="create-task-obs">
                                 <span>Criar lembrete na agenda</span>
                             </label>
-                            <input type="datetime-local" id="task-datetime-obs" style="padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.85rem;">
+                            <input type="date" id="task-datetime-obs" style="padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.85rem;">
                         </div>
                         <button type="button" class="btn btn-primary" onclick="saveObservation(${customer?.id || 0})" style="white-space: nowrap;">Salvar Observação</button>
                     </div>
