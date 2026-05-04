@@ -2079,10 +2079,24 @@ return `
             const isToday = day === today.getDate();
             const hasTask = dayTasks.length > 0;
             
+            // Verificar tipos de tarefa no dia
+            const hasAniversario = dayTasks.some(t => t.titulo?.startsWith('Aniversário'));
+            const hasObservacao = dayTasks.some(t => t.titulo?.startsWith('Observação'));
+            
+            let taskClass = 'has-task';
+            let dotClass = '';
+            if (hasAniversario) {
+                taskClass = 'has-aniversario';
+                dotClass = 'aniversario';
+            } else if (hasObservacao) {
+                taskClass = 'has-observacao';
+                dotClass = 'observacao';
+            }
+            
             daysHtml += `
-                <div class="calendar-day ${isToday ? 'today' : ''} ${hasTask ? 'has-task' : ''}" data-date="${dateStr}">
+                <div class="calendar-day ${isToday ? 'today' : ''} ${hasTask ? taskClass : ''}" data-date="${dateStr}">
                     <span class="day-number">${day}</span>
-                    ${hasTask ? `<span class="task-dot">${dayTasks.length}</span>` : ''}
+                    ${hasTask ? `<span class="task-dot ${dotClass}">${dayTasks.length}</span>` : ''}
                 </div>
             `;
         }
@@ -2098,15 +2112,20 @@ return `
                     <div class="tasks-sidebar" style="flex: 1; min-width: 300px; max-width: 400px;">
                         <h3 style="margin: 0 0 16px; font-size: 16px;">Próximas Tarefas</h3>
                         <div class="list">
-                            ${tasks.length > 0 ? tasks.sort((a, b) => new Date(a.data) - new Date(b.data)).slice(0, 8).map(t => `
-                                <div class="list-item" data-id="${t.id}">
+                            ${tasks.length > 0 ? tasks.sort((a, b) => new Date(a.data) - new Date(b.data)).slice(0, 8).map(t => {
+                                const isAniversario = t.titulo?.startsWith('Aniversário');
+                                const isObservacao = t.titulo?.startsWith('Observação');
+                                const borderColor = isAniversario ? '#9C27B0' : (isObservacao ? '#FF9800' : 'var(--primary)');
+                                return `
+                                <div class="list-item" data-id="${t.id}" style="border-left: 3px solid ${borderColor}">
                                     <div class="list-item-content">
                                         <div class="list-item-title">${t.titulo}</div>
                                         <div class="list-item-subtitle">${new Date(t.data).toLocaleDateString('pt-BR')}</div>
                                     </div>
                                     <span class="badge badge-${t.status}">${t.status}</span>
                                 </div>
-                            `).join('') : this.renderEmptyState('Nenhuma tarefa', 'Crie tarefas para acompanhar')}
+                                `;
+                            }).join('') : this.renderEmptyState('Nenhuma tarefa', 'Crie tarefas para acompanhar')}
                         </div>
                     </div>
                     

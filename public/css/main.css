@@ -1215,6 +1215,16 @@ body {
     border-bottom: 3px solid var(--primary);
 }
 
+.calendar-day.has-aniversario {
+    background: rgba(156, 39, 176, 0.08);
+    border-bottom: 3px solid #9C27B0;
+}
+
+.calendar-day.has-observacao {
+    background: rgba(255, 152, 0, 0.08);
+    border-bottom: 3px solid #FF9800;
+}
+
 .task-dot {
     width: 16px;
     height: 16px;
@@ -1230,9 +1240,25 @@ body {
     right: 2px;
 }
 
+.task-dot.aniversario {
+    background: #9C27B0;
+}
+
+.task-dot.observacao {
+    background: #FF9800;
+}
+
 .calendar-day.today .task-dot {
     background: white;
     color: var(--primary);
+}
+
+.calendar-day.today .task-dot.aniversario {
+    color: #9C27B0;
+}
+
+.calendar-day.today .task-dot.observacao {
+    color: #FF9800;
 }
 
 /* ============================================
