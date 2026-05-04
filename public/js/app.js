@@ -3753,7 +3753,8 @@ window.saveObservation = async function(customerId) {
     }
     
     const createTask = document.getElementById('create-task-obs')?.checked;
-    const taskDatetime = document.getElementById('task-datetime-obs')?.value;
+    const taskDate = document.getElementById('task-datetime-obs')?.value;
+    const taskDatetime = taskDate ? taskDate + 'T10:00:00' : null;
     
     const token = localStorage.getItem('CRM_TOKEN') || sessionStorage.getItem('CRM_TOKEN');
     try {
