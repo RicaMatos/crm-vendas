@@ -7,10 +7,13 @@ const API_BASE = '/api';
 
 async function fetchUsers() {
     const token = localStorage.getItem('CRM_TOKEN') || sessionStorage.getItem('CRM_TOKEN');
+    console.log('[admin] Token:', token?.substring(0, 20));
     const res = await fetch(`${API_BASE}/users`, {
         headers: { 'Authorization': `Bearer ${token}` }
     });
+    console.log('[admin] Response status:', res.status);
     const data = await res.json();
+    console.log('[admin] Data:', data);
     return data.data || [];
 }
 
