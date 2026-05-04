@@ -2421,7 +2421,7 @@ return `
                         </div>
                         <div style="display: flex; gap: 8px;">
                             <input type="text" id="new-observation" placeholder="Nova observação..." style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
-                            <button type="button" class="btn btn-primary" onclick="saveObservation(${customer?.id || 0})" style="white-space: nowrap;">Salvar</button>
+                            <button type="button" class="btn btn-primary" onclick="saveObservation(${customer?.id || 0})" style="white-space: nowrap;">Salvar Observação</button>
                         </div>
                     </div>
 ` : ''}
