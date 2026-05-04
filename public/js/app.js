@@ -2420,7 +2420,7 @@ return `
                             <div style="text-align: center; color: var(--text-secondary); font-size: 13px; padding: 10px;">Carregando...</div>
                         </div>
                         <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                            <textarea id="new-observation" placeholder="Nova observação..." style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); resize: none; height: 80px;">
+                            <textarea id="new-observation" placeholder="Nova observação..." style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); resize: none; height: 80px;"></textarea>
                         </div>
                         <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px; padding: 8px; background: var(--bg-tertiary); border-radius: 8px;">
                             <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem;">
