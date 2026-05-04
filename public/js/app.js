@@ -231,9 +231,12 @@ class AuthManager {
 
     updateAdminMenu(nivel) {
         const navAdminItem = document.getElementById('nav-admin-item');
+        console.log('[updateAdminMenu] nivel:', nivel);
+        console.log('[updateAdminMenu] navAdminItem:', navAdminItem);
         if (navAdminItem) {
             if (nivel === 'Admin') {
                 navAdminItem.classList.remove('hidden');
+                console.log('[updateAdminMenu] Removed hidden');
             } else {
                 navAdminItem.classList.add('hidden');
             }
@@ -367,6 +370,7 @@ class AuthManager {
     }
 
     setUser(user) {
+        console.log('[setUser] user:', user);
         this.user = user;
         localStorage.setItem('CRM_USER', JSON.stringify(user));
         
@@ -375,10 +379,13 @@ class AuthManager {
         document.getElementById('user-name').textContent = user.nome || 'Usuário';
         document.getElementById('user-email').textContent = user.email || '';
         
+        console.log('[setUser] user.nivel:', user.nivel);
         const navAdminItem = document.getElementById('nav-admin-item');
+        console.log('[setUser] navAdminItem:', navAdminItem);
         if (navAdminItem) {
             if (user.nivel === 'Admin') {
                 navAdminItem.classList.remove('hidden');
+                console.log('[setUser] Removed hidden - is Admin');
             } else {
                 navAdminItem.classList.add('hidden');
             }
