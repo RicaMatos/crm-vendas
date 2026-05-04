@@ -13,26 +13,37 @@ router.use(authenticate);
 /**
  * Lista todos os produtos
  * GET /api/products
+ * Se admin, retorna todos os produtos
  */
 router.get('/', async (req, res) => {
     try {
         const { user_id } = req.query;
         
         const isAdmin = req.user.nivel === 'Admin';
-        let targetUserId = req.user.id;
         
-        if (isAdmin && user_id) {
-            targetUserId = user_id;
+        // Se admin e não especificar user_id, retorna TODOS
+        let data, error;
+        
+        if (isAdmin && !user_id) {
+            console.log('[products] Admin mode - returning ALL products');
+            const result = await supabase.rpc('admin_get_all_products');
+            data = result.data;
+            error = result.error;
+        } else {
+            const targetUserId = (isAdmin && user_id) ? user_id : req.user.id;
+            console.log('[products] Filtering by user_id:', targetUserId);
+            const { data: products, error: err } = await supabase
+                .from('products')
+                .select('*')
+                .eq('user_id', targetUserId)
+                .order('nome', { ascending: true });
+            data = products;
+            error = err;
         }
-        
-        const { data, error } = await supabase
-            .from('products')
-            .select('*')
-            .eq('user_id', targetUserId)
-            .order('nome', { ascending: true });
 
         if (error) throw error;
 
+        console.log('[products] Returning:', data?.length || 0, 'products');
         res.json({ success: true, data: data || [] });
     } catch (error) {
         console.error('[products] Erro ao listar:', error);

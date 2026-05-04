@@ -13,26 +13,37 @@ router.use(authenticate);
 /**
  * Lista todas as culturas
  * GET /api/crops
+ * Se admin, retorna todas as culturas
  */
 router.get('/', async (req, res) => {
     try {
         const { user_id } = req.query;
         
         const isAdmin = req.user.nivel === 'Admin';
-        let targetUserId = req.user.id;
         
-        if (isAdmin && user_id) {
-            targetUserId = user_id;
+        let data, error;
+        
+        // Se admin e não especificar user_id, retorna TODAS
+        if (isAdmin && !user_id) {
+            console.log('[crops] Admin mode - returning ALL crops');
+            const result = await supabase.rpc('admin_get_all_crops');
+            data = result.data;
+            error = result.error;
+        } else {
+            const targetUserId = (isAdmin && user_id) ? user_id : req.user.id;
+            console.log('[crops] Filtering by user_id:', targetUserId);
+            const { data: crops, error: err } = await supabase
+                .from('crops')
+                .select('*')
+                .eq('user_id', targetUserId)
+                .order('nome', { ascending: true });
+            data = crops;
+            error = err;
         }
-        
-        const { data, error } = await supabase
-            .from('crops')
-            .select('*')
-            .eq('user_id', targetUserId)
-            .order('nome', { ascending: true });
 
         if (error) throw error;
 
+        console.log('[crops] Returning:', data?.length || 0, 'crops');
         res.json({ success: true, data: data || [] });
     } catch (error) {
         console.error('[crops] Erro ao listar:', error);
