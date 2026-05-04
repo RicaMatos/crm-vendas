@@ -2400,13 +2400,13 @@ return `
                         </select>
                     </div>
                     
-                    <div class="form-row">
-                        <div class="form-group" style="flex: 2;">
+                    <div class="form-row" style="align-items: flex-end;">
+                        <div class="form-group" style="flex: 1;">
                             <label for="data_aniversario">Data de Aniversário</label>
-                            <input type="date" id="data_aniversario" name="data_aniversario" value="${customer?.data_aniversario || ''}" style="width: 100%;">
+                            <input type="date" id="data_aniversario" name="data_aniversario" value="${customer?.data_aniversario || ''}">
                         </div>
-                        <div class="form-group" style="flex: 1; display: flex; align-items: flex-end; padding-bottom: 12px;">
-                            <label for="lembrete_aniversario" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+                        <div class="form-group" style="flex: 1; display: flex; align-items: center;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; height: 42px; border: 1px solid var(--border-color); border-radius: 8px; padding: 0 12px; background: var(--bg-tertiary); width: 100%;">
                                 <input type="checkbox" id="lembrete_aniversario" name="lembrete_aniversario" ${customer?.lembrete_aniversario ? 'checked' : ''}>
                                 <span>Lembrete automático</span>
                             </label>
