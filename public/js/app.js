@@ -2416,7 +2416,7 @@ return `
                     ${isEdit ? `
                     <div id="observations-section" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color);">
                         <h4 style="margin: 0 0 12px 0; font-size: 14px; color: var(--text-secondary);">Últimos Contatos</h4>
-                        <div id="observations-list" style="max-height: 150px; overflow-y: auto; margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: var(--bg-tertiary);">
+                        <div id="observations-list" style="max-height: 300px; overflow-y: auto; margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: var(--bg-tertiary);">
                             <div style="text-align: center; color: var(--text-secondary); font-size: 13px; padding: 10px;">Carregando...</div>
                         </div>
                         <div style="display: flex; gap: 8px; margin-bottom: 8px;">
