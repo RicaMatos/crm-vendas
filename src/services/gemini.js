@@ -22,7 +22,7 @@ async function extrairClientesDoTexto(textoConteudo, tipoArquivo) {
     }
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-8k' });
 
     const prompt = `
 Você é um assistente especializado em extrair dados de clientes de arquivos.
@@ -98,7 +98,7 @@ async function extrairClientesDeImagem(base64Image, mimeType) {
     }
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-8k' });
 
     const prompt = `
 Você é um assistente especializado em extrair dados de clientes de imagens.
