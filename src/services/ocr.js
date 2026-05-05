@@ -42,8 +42,8 @@ function extrairClientesDoTexto(texto) {
         // Detecta padrão de nome (geralmente linhas com letras maiúsculas)
         const nomeMatch = limpa.match(/^([A-ZÀÁÉÍÓÚÂÊÎÔÛÃÕ][a-zàáéíóúâêîôûãõ]+\s+[A-ZÀÁÉÍÓÚÂÊÎÔÛÃÕ][a-zàáéíóúâêîôûãõ]+)/);
         
-        // Detecta CPF (###.###.###-## ou ###########)
-        const cpfMatch = limpa.match(/(\d{3}\.?\d{3}\.?\d{3}-?\d{2})/);
+        // Detecta CPF (###.###.###-##) ou CNPJ (##.###.###/####-##)
+        const docMatch = limpa.match(/(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}|\d{3}\.?\d{3}\.?\d{3}-?\d{2})/);
         
         // Detecta telefone/whatsapp
         const telMatch = limpa.match(/(?:whatsapp|tel|fone)?\s*[:.]?\s*(\d{2,3}[-\s]?\d{4,5}[-\s]?\d{4})/i);
@@ -60,8 +60,8 @@ function extrairClientesDoTexto(texto) {
         }
 
         if (clienteAtual) {
-            if (cpfMatch && !clienteAtual.documento) {
-                clienteAtual.documento = cpfMatch[1].replace(/\D/g, '');
+            if (docMatch && !clienteAtual.documento) {
+                clienteAtual.documento = docMatch[1].replace(/\D/g, '');
             }
             if (telMatch && !clienteAtual.whatsapp) {
                 let tel = telMatch[1].replace(/\D/g, '');
