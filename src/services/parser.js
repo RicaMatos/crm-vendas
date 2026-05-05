@@ -25,47 +25,64 @@ function extrairClientesDeTexto(texto) {
     const clientes = [];
     const linhas = texto.split(/[\n\r]+/).filter(l => l.trim());
     
-    const regexCpf = /\d{3}\.?\d{3}\.?\d{3}-?\d{2}/;
-    const regexCnpj = /\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/;
-    const regexTel = /\d{2,3}[-\s]?\d{4,5}[-\s]?\d{4}/;
-    const regexEmail = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+    console.log('[parser] Total de linhas:', linhas.length);
     
     for (const linha of linhas) {
         const textoLinha = linha.trim();
         if (!textoLinha || textoLinha.length < 3) continue;
         
-        const cpfMatch = textoLinha.match(regexCpf);
-        const cnpjMatch = textoLinha.match(regexCnpj);
-        const docMatch = cpfMatch || cnpjMatch;
-        const telMatch = textoLinha.match(regexTel);
-        const emailMatch = textoLinha.match(regexEmail);
+        // Separa por tab, vírgula ou ponto-e-vírgula
+        const campos = textoLinha.split(/[\t,;]+/).map(c => c.trim()).filter(c => c);
         
-        let nomeLimpo = textoLinha
-            .replace(regexCpf, '')
-            .replace(regexCnpj, '')
-            .replace(regexEmail, '')
-            .replace(regexTel, '')
-            .replace(/\d+/g, '')
-            .replace(/[.,;]/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
+        // Tenta extrair dados de cada campo
+        let cliente = { nome: null, documento: null, whatsapp: null, email: null };
         
-        if (nomeLimpo.length > 3) {
-            clientes.push({
-                nome: nomeLimpo,
-                documento: docMatch ? normalizaDocumento(docMatch[0]) : null,
-                whatsapp: telMatch ? normalizaTelefone(telMatch[0]) : null,
-                email: emailMatch ? emailMatch[0].toLowerCase() : null
-            });
-        } else if (docMatch || telMatch || emailMatch) {
-            clientes.push({
-                documento: docMatch ? normalizaDocumento(docMatch[0]) : null,
-                whatsapp: telMatch ? normalizaTelefone(telMatch[0]) : null,
-                email: emailMatch ? emailMatch[0].toLowerCase() : null
-            });
+        for (const campo of campos) {
+            const doc = normalizaDocumento(campo);
+            if (doc && (doc.length === 11 || doc.length === 14)) {
+                cliente.documento = doc;
+                continue;
+            }
+            
+            const tel = normalizaTelefone(campo);
+            if (tel && tel.length >= 12) {
+                cliente.whatsapp = tel;
+                continue;
+            }
+            
+            if (campo.includes('@') && campo.includes('.')) {
+                cliente.email = campo.toLowerCase();
+                continue;
+            }
+        }
+        
+        // Se tem documento, usa como nome o primeiro campo texto
+        if (cliente.documento && !cliente.nome) {
+            for (const campo of campos) {
+                if (!normalizaDocumento(campo) && !campo.includes('@') && campo.length > 3) {
+                    cliente.nome = campo;
+                    break;
+                }
+            }
+        }
+        
+        // Se só tem nome (sem documento), tenta usar
+        if (!cliente.nome && campos.length > 0) {
+            for (const campo of campos) {
+                if (!normalizaDocumento(campo) && !campo.includes('@') && !campo.match(/^\d+$/) && campo.length > 3) {
+                    cliente.nome = campo;
+                    break;
+                }
+            }
+        }
+        
+        // Aceita qualquer coisa que tenha nome OU documento
+        if (cliente.nome || cliente.documento) {
+            clientes.push(cliente);
         }
     }
     
+    console.log('[parser] Clientes extraídos:', clientes.length);
     return clientes;
 }
 

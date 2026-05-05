@@ -147,6 +147,7 @@ router.post('/customers/preview', upload.single('file'), async (req, res) => {
             try {
                 clientesExtraidos = processarArquivo(buffer, originalname);
                 console.log(`[import] Parser retornou ${clientesExtraidos.length} clientes`);
+                console.log('[import] Primeiros clientes:', JSON.stringify(clientesExtraidos.slice(0, 3)));
             } catch (parserErr) {
                 console.error('[import] Erro no parser:', parserErr.message);
                 clientesExtraidos = [];
