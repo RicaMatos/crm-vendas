@@ -18,6 +18,7 @@ const { authenticate } = require('../middleware/authenticate');
 const { supabase } = require('../config/supabaseClient');
 const { processarArquivo } = require('../services/parser');
 const { extrairTextoDeImagem, extrairClientesDoTexto: extrairClientesViaOCR } = require('../services/ocr');
+const { extrairClientesDeImagem } = require('../services/gemini');
 
 // Configura multer para armazenar em memória
 const upload = multer({
@@ -121,17 +122,25 @@ router.post('/customers/preview', upload.single('file'), async (req, res) => {
         // Extrai texto do arquivo
         let textoExtraido = '';
         let tipoArquivo = ext.replace('.', '').toUpperCase();
+        let clientesExtraidos = [];
 
         if (['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)) {
-            // Imagens: usa OCR local (Tesseract.js)
+            // Imagens: usa Gemini Vision (IA inteligente)
             const base64 = buffer.toString('base64');
             const mimeType = mimetype || `image/${ext.replace('.', '')}`;
             
-            console.log(`[import] Processando imagem com OCR: ${originalname}`);
-            const textoOCR = await extrairTextoDeImagem(`data:${mimeType};base64,${base64}`);
-            console.log(`[import] OCR extraiu ${textoOCR.length} caracteres`);
-            
-            clientesExtraidos = extrairClientesViaOCR(textoOCR);
+            console.log(`[import] Processando imagem com Gemini Vision: ${originalname}`);
+            try {
+                clientesExtraidos = await extrairClientesDeImagem(base64, mimeType);
+                console.log(`[import] Gemini extraiu ${clientesExtraidos.length} clientes da imagem`);
+            } catch (geminiErr) {
+                console.error('[import] Erro no Gemini Vision:', geminiErr.message);
+                // Fallback: tenta OCR local
+                console.log('[import] Tentando OCR local como fallback...');
+                const textoOCR = await extrairTextoDeImagem(`data:${mimeType};base64,${base64}`);
+                console.log(`[import] OCR extraiu ${textoOCR.length} caracteres`);
+                clientesExtraidos = extrairClientesViaOCR(textoOCR);
+            }
         } else if (ext === '.pdf') {
             try {
                 const pdfParse = require('pdf-parse');
