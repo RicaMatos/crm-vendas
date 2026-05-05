@@ -119,7 +119,7 @@ router.post('/customers/preview', upload.single('file'), async (req, res) => {
         console.log(`[import] Processando arquivo: ${originalname} (${(buffer.length / 1024).toFixed(1)}KB)`);
 
         // Extrai texto do arquivo
-        let textoExtraido;
+        let textoExtraido = '';
         let tipoArquivo = ext.replace('.', '').toUpperCase();
 
         if (['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)) {
@@ -139,12 +139,18 @@ router.post('/customers/preview', upload.single('file'), async (req, res) => {
                 textoExtraido = pdfData.text;
                 console.log(`[import] PDF extraído: ${textoExtraido.length} caracteres`);
             } catch (pdfErr) {
-                console.warn('[import] pdf-parse falhou, enviando raw para Gemini:', pdfErr.message);
-                textoExtraido = `[Arquivo PDF: ${originalname}]\nO conteúdo está em formato binário (base64). Analise o documento e extraia os dados dos clientes.`;
+                console.warn('[import] pdf-parse falhou:', pdfErr.message);
+                textoExtraido = buffer.toString('utf-8');
             }
         } else {
             // CSV, XLSX, TXT: usa parser local
-            clientesExtraidos = processarArquivo(buffer, originalname);
+            try {
+                clientesExtraidos = processarArquivo(buffer, originalname);
+                console.log(`[import] Parser retornou ${clientesExtraidos.length} clientes`);
+            } catch (parserErr) {
+                console.error('[import] Erro no parser:', parserErr.message);
+                clientesExtraidos = [];
+            }
         }
 
         // textoExtraido agora pode não existir, usa valor padrão
