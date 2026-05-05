@@ -3483,9 +3483,9 @@ return `
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                         </svg>
                         <p class="upload-title">Arraste o arquivo aqui ou clique para selecionar</p>
-                        <p class="upload-hint">Formatos aceitos: CSV, XLSX, PDF, TXT (máx. 10MB)</p>
+                        <p class="upload-hint">Formatos aceitos: CSV, XLSX, PDF, TXT, JPG, PNG (máx. 10MB)</p>
                     </div>
-                    <input type="file" id="file-input" accept=".csv,.xlsx,.xls,.pdf,.txt" hidden>
+                    <input type="file" id="file-input" accept=".csv,.xlsx,.xls,.pdf,.txt,.jpg,.jpeg,.png,.gif,.webp" hidden>
                 </div>
 
                 <!-- Loading -->

@@ -15,7 +15,7 @@ const fs = require('fs');
 const os = require('os');
 
 const { authenticate } = require('../middleware/authenticate');
-const { extrairClientesDoTexto } = require('../services/gemini');
+const { extrairClientesDoTexto, extrairClientesDeImagem } = require('../services/gemini');
 const { supabase } = require('../config/supabaseClient');
 
 // Configura multer para armazenar em memória
@@ -32,15 +32,23 @@ const upload = multer({
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'application/vnd.ms-excel',
             'application/pdf',
-            'application/octet-stream'
+            'application/octet-stream',
+            'image/jpeg',
+            'image/png',
+            'image/gif',
+            'image/webp'
         ];
-        const allowedExts = ['.csv', '.txt', '.xlsx', '.xls', '.pdf', '.tsv'];
+        const allowedExts = ['.csv', '.txt', '.xlsx', '.xls', '.pdf', '.tsv', '.jpg', '.jpeg', '.png', '.gif', '.webp'];
 
-        const ext = path.extname(file.originalname).toLowerCase();
+        if (!file.fieldname) {
+            file.fieldname = file.originalname;
+        }
+        
+        const ext = path.extname(file.fieldname).toLowerCase();
         if (allowedExts.includes(ext) || allowedMimes.includes(file.mimetype)) {
             cb(null, true);
         } else {
-            cb(new Error(`Formato não suportado: ${ext}. Use CSV, XLSX, PDF ou TXT.`));
+            cb(new Error(`Formato não suportado: ${ext}. Use CSV, XLSX, PDF, TXT ou imagem (JPG, PNG).`));
         }
     }
 });
@@ -100,7 +108,7 @@ router.post('/customers/preview', upload.single('file'), async (req, res) => {
         if (!req.file) {
             return res.status(400).json({
                 success: false,
-                message: 'Nenhum arquivo enviado. Selecione um arquivo CSV, XLSX, PDF ou TXT.'
+                message: 'Nenhum arquivo enviado. Selecione um arquivo CSV, XLSX, PDF, TXT ou imagem (JPG, PNG).'
             });
         }
 
@@ -111,8 +119,18 @@ router.post('/customers/preview', upload.single('file'), async (req, res) => {
 
         // Extrai texto do arquivo
         let textoExtraido;
+        let tipoArquivo = ext.replace('.', '').toUpperCase();
 
-        if (ext === '.pdf') {
+        if (['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)) {
+            // Imagens: processa com visão do Gemini
+            const base64 = buffer.toString('base64');
+            const mimeType = mimetype || `image/${ext.replace('.', '')}`;
+            textoExtraido = `[Imagem: ${originalname}]\nImagem em base64 (${mimeType}). Analise esta imagem e extraia os dados dos clientes contidos na imagem.`;
+            
+            // Armazena para usar na função de extração com visão
+            req.file.imagemBase64 = base64;
+            req.file.imagemMimeType = mimeType;
+        } else if (ext === '.pdf') {
             try {
                 const pdfParse = require('pdf-parse');
                 const pdfData = await pdfParse(buffer);
@@ -134,8 +152,14 @@ router.post('/customers/preview', upload.single('file'), async (req, res) => {
         }
 
         // Envia para o Gemini extrair dados estruturados
-        const tipoArquivo = ext.replace('.', '').toUpperCase();
-        const clientesExtraidos = await extrairClientesDoTexto(textoExtraido, tipoArquivo);
+        let clientesExtraidos;
+        
+        if (req.file.imagemBase64) {
+            // Imagem: usa visão do Gemini
+            clientesExtraidos = await extrairClientesDeImagem(req.file.imagemBase64, req.file.imagemMimeType);
+        } else {
+            clientesExtraidos = await extrairClientesDoTexto(textoExtraido, tipoArquivo);
+        }
 
         if (!clientesExtraidos || clientesExtraidos.length === 0) {
             return res.status(422).json({

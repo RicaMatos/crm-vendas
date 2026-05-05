@@ -22,7 +22,7 @@ async function extrairClientesDoTexto(textoConteudo, tipoArquivo) {
     }
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const prompt = `
 Você é um assistente especializado em extrair dados de clientes de arquivos.
@@ -86,6 +86,75 @@ ${textoConteudo.substring(0, 30000)}
     }
 }
 
+/**
+ * Extrai dados de clientes a partir de uma imagem usando Gemini Vision
+ * @param {string} base64Image - Imagem em formato base64
+ * @param {string} mimeType - Tipo MIME da imagem
+ * @returns {Promise<Array>} Array de objetos de cliente
+ */
+async function extrairClientesDeImagem(base64Image, mimeType) {
+    if (!GEMINI_API_KEY) {
+        throw new Error('GEMINI_API_KEY não configurada no .env');
+    }
+
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+    const prompt = `
+Você é um assistente especializado em extrair dados de clientes de imagens.
+Analise a imagem fornecida e retorne APENAS um JSON válido com os dados dos clientes encontrados.
+
+REGRAS:
+1. Retorne SOMENTE um array JSON válido, sem markdown
+2. Se não encontrar nenhum cliente, retorne []
+
+CAMPOS (todos opcionais exceto nome):
+- nome (string): Nome completo
+- documento (string|null): CPF ou CNPJ (apenas números)
+- whatsapp (string|null): Telefone com código do país
+- email (string|null): E-mail
+- logradouro (string|null): Rua/avenida
+- numero (string|null): Número
+- complemento (string|null): Complemento
+- bairro (string|null): Bairro
+- cep (string|null): CEP (apenas números)
+- cidade (string|null): Cidade
+- uf (string|null): Estado (2 letras)
+- status (string|null): "Lead", "Prospect", "Cliente", "Inativo"
+- observacao (string|null): Observação
+`;
+
+    try {
+        const imagePart = {
+            inlineData: {
+                data: base64Image,
+                mimeType: mimeType
+            }
+        };
+
+        const result = await model.generateContent([prompt, imagePart]);
+        const response = result.response;
+        const text = response.text();
+
+        let jsonStr = text.trim();
+        if (jsonStr.startsWith('```')) {
+            jsonStr = jsonStr.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        }
+
+        const clientes = JSON.parse(jsonStr);
+
+        if (!Array.isArray(clientes)) {
+            throw new Error('Gemini não retornou um array válido');
+        }
+
+        return clientes.filter(c => c.nome && c.nome.trim() !== '');
+    } catch (error) {
+        console.error('[gemini] Erro ao processar imagem:', error);
+        throw new Error(`Falha ao processar imagem com IA: ${error.message}`);
+    }
+}
+
 module.exports = {
-    extrairClientesDoTexto
+    extrairClientesDoTexto,
+    extrairClientesDeImagem
 };
