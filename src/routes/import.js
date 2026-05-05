@@ -15,8 +15,9 @@ const fs = require('fs');
 const os = require('os');
 
 const { authenticate } = require('../middleware/authenticate');
-const { extrairClientesDoTexto, extrairClientesDeImagem } = require('../services/gemini');
 const { supabase } = require('../config/supabaseClient');
+const { processarArquivo } = require('../services/parser');
+const { extrairTextoDeImagem, extrairClientesDoTexto: extrairClientesViaOCR } = require('../services/ocr');
 
 // Configura multer para armazenar em memória
 const upload = multer({
@@ -122,14 +123,15 @@ router.post('/customers/preview', upload.single('file'), async (req, res) => {
         let tipoArquivo = ext.replace('.', '').toUpperCase();
 
         if (['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)) {
-            // Imagens: processa com visão do Gemini
+            // Imagens: usa OCR local (Tesseract.js)
             const base64 = buffer.toString('base64');
             const mimeType = mimetype || `image/${ext.replace('.', '')}`;
-            textoExtraido = `[Imagem: ${originalname}]\nImagem em base64 (${mimeType}). Analise esta imagem e extraia os dados dos clientes contidos na imagem.`;
             
-            // Armazena para usar na função de extração com visão
-            req.file.imagemBase64 = base64;
-            req.file.imagemMimeType = mimeType;
+            console.log(`[import] Processando imagem com OCR: ${originalname}`);
+            const textoOCR = await extrairTextoDeImagem(`data:${mimeType};base64,${base64}`);
+            console.log(`[import] OCR extraiu ${textoOCR.length} caracteres`);
+            
+            clientesExtraidos = extrairClientesViaOCR(textoOCR);
         } else if (ext === '.pdf') {
             try {
                 const pdfParse = require('pdf-parse');
@@ -141,24 +143,8 @@ router.post('/customers/preview', upload.single('file'), async (req, res) => {
                 textoExtraido = `[Arquivo PDF: ${originalname}]\nO conteúdo está em formato binário (base64). Analise o documento e extraia os dados dos clientes.`;
             }
         } else {
-            textoExtraido = extrairTextoArquivo(buffer, originalname);
-        }
-
-        if (!textoExtraido || textoExtraido.trim().length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Não foi possível extrair conteúdo do arquivo. Verifique se o arquivo não está vazio.'
-            });
-        }
-
-        // Envia para o Gemini extrair dados estruturados
-        let clientesExtraidos;
-        
-        if (req.file.imagemBase64) {
-            // Imagem: usa visão do Gemini
-            clientesExtraidos = await extrairClientesDeImagem(req.file.imagemBase64, req.file.imagemMimeType);
-        } else {
-            clientesExtraidos = await extrairClientesDoTexto(textoExtraido, tipoArquivo);
+            // CSV, XLSX, TXT: usa parser local
+            clientesExtraidos = processarArquivo(buffer, originalname);
         }
 
         if (!clientesExtraidos || clientesExtraidos.length === 0) {
