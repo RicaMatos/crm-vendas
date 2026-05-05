@@ -147,19 +147,22 @@ router.post('/customers/preview', upload.single('file'), async (req, res) => {
             clientesExtraidos = processarArquivo(buffer, originalname);
         }
 
+        // textoExtraido agora pode não existir, usa valor padrão
+        const linhasProcessadas = textoExtraido ? textoExtraido.split('\n').length : clientesExtraidos ? clientesExtraidos.length * 5 : 0;
+
         if (!clientesExtraidos || clientesExtraidos.length === 0) {
             return res.status(422).json({
                 success: false,
-                message: 'Não foi possível identificar dados de clientes no arquivo. Verifique o formato e tente novamente.',
+                message: 'Não fue possível identificar dados de clientes no archivo. Verifique o formato e tente novamente.',
                 data: {
                     filename: originalname,
-                    linhasProcessadas: textoExtraido.split('\n').length,
+                    linhasProcessadas: linhasProcessadas,
                     clientesEncontrados: 0
                 }
             });
         }
 
-        console.log(`[import] Gemini extraiu ${clientesExtraidos.length} clientes de ${originalname}`);
+        console.log(`[import] Parser extraiu ${clientesExtraidos.length} clientes de ${originalname}`);
 
         // Retorna preview
         res.json({
@@ -167,7 +170,7 @@ router.post('/customers/preview', upload.single('file'), async (req, res) => {
             data: {
                 filename: originalname,
                 tamanhoKB: (buffer.length / 1024).toFixed(1),
-                linhasProcessadas: textoExtraido.split('\n').length,
+                linhasProcessadas: linhasProcessadas,
                 clientesEncontrados: clientesExtraidos.length,
                 clientes: clientesExtraidos
             }
@@ -178,12 +181,6 @@ router.post('/customers/preview', upload.single('file'), async (req, res) => {
 
         if (error.message.includes('Formato não suportado')) {
             return res.status(400).json({ success: false, message: error.message });
-        }
-        if (error.message.includes('GEMINI_API_KEY')) {
-            return res.status(500).json({
-                success: false,
-                message: 'Chave da API Gemini não configurada. Configure GEMINI_API_KEY no .env.'
-            });
         }
 
         res.status(500).json({
