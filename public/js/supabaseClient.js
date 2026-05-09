@@ -180,6 +180,26 @@ class SupabaseClient {
                 return { data: { session: { user } }, error: null };
             }
             return { data: { session: null }, error: new Error('Sessão inválida') };
+        },
+
+        updateUser: async (data) => {
+            const token = localStorage.getItem('CRM_TOKEN') || sessionStorage.getItem('CRM_TOKEN');
+            const response = await fetch(`${this.url}/auth/v1/user`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': this.key,
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+            
+            if (response.ok) {
+                const user = await response.json();
+                return { data: { user }, error: null };
+            }
+            const error = await response.json();
+            return { data: null, error: new Error(error.error_description || 'Erro ao atualizar') };
         }
     };
 }

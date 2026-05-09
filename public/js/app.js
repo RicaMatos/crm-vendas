@@ -542,6 +542,11 @@ class App {
             ui.showToast('Logout realizado', 'info');
         });
 
+        // Edit profile
+        document.getElementById('user-info')?.addEventListener('click', async () => {
+            await window.showProfileModal();
+        });
+
         // Theme toggle
         this.initTheme();
         document.getElementById('theme-toggle')?.addEventListener('click', () => {
@@ -4182,4 +4187,125 @@ window.saveObservation = async function(customerId) {
         console.error('Erro ao salvar observação:', e);
         ui.showToast('Erro ao salvar', 'error');
     }
+};
+
+// Função global para editar perfil do usuário
+window.showProfileModal = async function() {
+    const user = JSON.parse(localStorage.getItem('CRM_USER') || '{}');
+    const userData = user.user_metadata || {};
+    
+    // Buscar dados atuais do usuário no backend
+    const token = localStorage.getItem('CRM_TOKEN') || sessionStorage.getItem('CRM_TOKEN');
+    let supabaseData = { nome: userData.nome || user.nome || '', telefone: userData.telefone || '', email: user.email || '' };
+    
+    try {
+        const response = await fetch(`${API_BASE}/auth/me`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        console.log('[profile] GET /me status:', response.status);
+        const result = await response.json();
+        console.log('[profile] GET /me result:', result);
+        
+        if (result.success && result.data) {
+            supabaseData = {
+                nome: result.data.nome || '',
+                telefone: result.data.telefone || '',
+                email: result.data.email || ''
+            };
+        } else {
+            console.log('[profile] Result não sucesso ou sem dados');
+        }
+    } catch (e) {
+        console.error('Erro ao buscar dados do usuário:', e);
+    }
+    
+    console.log('[profile] supabaseData final:', supabaseData);
+    
+    const modalContent = `
+        <div class="modal-overlay active" style="display: flex; align-items: center; justify-content: center;">
+            <div class="modal-content" style="width: 95%; max-width: 450px; padding: 24px;">
+                <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 0; border: none;">
+                    <h3 style="margin: 0; color: var(--text-primary);">Editar Perfil</h3>
+                    <button class="btn-close" onclick="ui.closeModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">&times;</button>
+                </div>
+                
+                <form id="profile-form">
+                    <div class="form-group">
+                        <label for="profile-name">Nome Completo</label>
+                        <input type="text" id="profile-name" value="${supabaseData.nome}" required style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profile-phone">Telefone</label>
+                        <input type="tel" id="profile-phone" value="${supabaseData.telefone}" placeholder="(00) 00000-0000" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profile-email">E-mail</label>
+                        <input type="email" id="profile-email" value="${supabaseData.email}" required style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-block" style="margin-top: 16px;">
+                        <span>Salvar Alterações</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-block" onclick="ui.closeModal()" style="margin-top: 8px; background: var(--bg-tertiary); color: var(--text-primary);">
+                        <span>Cancelar</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    `;
+    
+    ui.showModal(modalContent);
+    
+    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const nome = document.getElementById('profile-name').value.trim();
+        const telefone = document.getElementById('profile-phone').value.trim();
+        const email = document.getElementById('profile-email').value.trim();
+        
+        try {
+            const token = localStorage.getItem('CRM_TOKEN') || sessionStorage.getItem('CRM_TOKEN');
+            
+            const response = await fetch(`${API_BASE}/auth/profile`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ nome, telefone, email })
+            });
+            
+            const result = await response.json();
+            
+            if (!result.success) {
+                ui.showToast(result.message || 'Erro ao atualizar perfil', 'error');
+                return;
+            }
+            
+            const updatedUser = {
+                ...user,
+                email: result.data.email,
+                user_metadata: {
+                    ...userData,
+                    nome: result.data.nome,
+                    telefone: result.data.telefone
+                }
+            };
+            
+            localStorage.setItem('CRM_USER', JSON.stringify(updatedUser));
+            document.getElementById('user-name').textContent = nome || 'Usuário';
+            document.getElementById('user-email').textContent = email || '';
+            
+            ui.closeModal();
+            ui.showToast('Perfil atualizado com sucesso!', 'success');
+            
+        } catch (err) {
+            console.error('Erro ao atualizar perfil:', err);
+            ui.showToast('Erro ao atualizar perfil', 'error');
+        }
+    });
 };

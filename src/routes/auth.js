@@ -9,6 +9,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { supabase, supabaseAnon } = require('../config/supabaseClient');
+const { authenticate } = require('../middleware/authenticate');
 const JWT_SECRET = process.env.JWT_SECRET || 'crm_vendas_2026_chave_jwt_producao_segura_aleatoria';
 
 /**
@@ -447,6 +448,109 @@ router.post('/confirm-reset-password', async (req, res) => {
         res.json({ success: true, message: 'Senha atualizada com sucesso!' });
     } catch (error) {
         console.error('[auth] Erro em confirm-reset-password:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro interno do servidor'
+        });
+    }
+});
+
+// Rota para atualizar perfil do usuário logado
+router.put('/profile', authenticate, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        let { nome, telefone, email } = req.body;
+
+        // Tratar valores undefined ou vazios
+        if (nome === undefined || nome === null) nome = '';
+        if (telefone === undefined || telefone === null) telefone = '';
+        if (email === undefined || email === null) email = '';
+
+        if (!nome && !telefone && !email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Informe pelo menos um campo para atualizar'
+            });
+        }
+
+        // Preparar dados para atualização
+        const updateData = {
+            user_metadata: {}
+        };
+        
+        if (nome) updateData.user_metadata.nome = nome;
+        if (telefone) updateData.user_metadata.telefone = telefone;
+
+        console.log('[profile] updateData:', JSON.stringify(updateData));
+
+        // Atualizar usuário via Supabase Admin API
+        const { data, error } = await supabase.auth.admin.updateUserById(userId, updateData);
+
+        if (error) {
+            console.error('[auth] Erro ao atualizar perfil:', error);
+            return res.status(400).json({
+                success: false,
+                message: error.message || 'Erro ao atualizar perfil'
+            });
+        }
+
+        console.log('[profile]Sucesso:', data.user.id);
+
+        res.json({
+            success: true,
+            message: 'Perfil atualizado com sucesso!',
+            data: {
+                id: data.user.id,
+                email: data.user.email,
+                nome: data.user.user_metadata?.nome || '',
+                telefone: data.user.user_metadata?.telefone || ''
+            }
+        });
+    } catch (error) {
+        console.error('[auth] Erro em PUT /profile:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro interno do servidor'
+        });
+    }
+});
+
+// Rota para buscar dados do usuário logado
+router.get('/me', authenticate, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        
+        // Buscar usuário no Supabase
+        const { data: userList, error: listError } = await supabase.auth.admin.listUsers();
+        
+        if (listError) {
+            console.error('[auth] Erro ao listar usuários:', listError);
+            return res.status(400).json({ success: false, message: 'Erro ao buscar usuário' });
+        }
+
+        const currentUser = userList.users.find(u => u.id === userId);
+        
+        console.log('[me] userId:', userId);
+        console.log('[me] currentUser:', JSON.stringify(currentUser));
+        
+        if (!currentUser) {
+            return res.status(400).json({
+                success: false,
+                message: 'Usuário não encontrado'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                id: currentUser.id,
+                email: currentUser.email,
+                nome: currentUser.user_metadata?.nome || '',
+                telefone: currentUser.user_metadata?.telefone || ''
+            }
+        });
+    } catch (error) {
+        console.error('[auth] Erro em GET /me:', error);
         res.status(500).json({
             success: false,
             message: 'Erro interno do servidor'

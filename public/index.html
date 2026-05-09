@@ -36,13 +36,7 @@
         <div id="auth-screen" class="screen hidden">
             <div class="auth-container">
                 <div class="auth-logo">
-                    <svg width="80" height="80" viewBox="0 0 64 64" fill="none">
-                        <rect width="64" height="64" rx="20" fill="#5d59e1"/>
-                        <path d="M20 32C20 25.373 25.373 20 32 20C38.627 20 44 25.373 44 32" stroke="white" stroke-width="5" stroke-linecap="round"/>
-                        <path d="M32 32L44 44" stroke="white" stroke-width="5" stroke-linecap="round"/>
-                        <circle cx="24" cy="28" r="4" fill="white"/>
-                        <path d="M32 44V52M32 52L28 48M32 52L36 48" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+                    <img src="/logo.png" alt="CRM Vendas" style="width: 80px; height: 80px; object-fit: contain; border-radius: 20px;">
                 </div>
                 <h1>CRM Vendas</h1>
                 <p class="auth-subtitle">Gestão de clientes e pedidos</p>
@@ -145,14 +139,14 @@
                             <path d="M3 12h18M3 6h18M3 18h18"/>
                         </svg>
                     </button>
-                    <h1 class="app-title">CRM NEXUS</h1>
+                    <h1 class="app-title">CRM VENDAS</h1>
                 </div>
             </header>
 
             <!-- Sidebar -->
             <aside class="sidebar" id="sidebar">
                 <div class="sidebar-header" style="padding: 24px 16px; border-bottom: 1px solid var(--border-color); margin-bottom: 8px;">
-                    <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); letter-spacing: 0.5px; margin: 0;">CRM NEXUS</h2>
+                    <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); letter-spacing: 0.5px; margin: 0;">CRM VENDAS</h2>
                 </div>
                 <nav class="sidebar-nav">
                     <a href="#" class="nav-item active" data-view="dashboard">
@@ -229,7 +223,7 @@
                             </svg>
                         </button>
                     </div>
-                    <div class="user-info">
+                    <div class="user-info" id="user-info" style="cursor: pointer;" title="Editar perfil">
                         <div class="user-avatar" id="user-avatar">U</div>
                         <div class="user-details">
                             <span class="user-name" id="user-name">Usuário</span>
