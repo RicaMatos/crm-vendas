@@ -1,5 +1,6 @@
 import { store } from '../store.js';
 import { ui } from '../ui-core.js';
+import brazilMap from '../components/brazilMap.js';
 
 const db = {
     getAll: (col) => {
@@ -400,10 +401,13 @@ export const dashboardView = {
                                 </div>
                             `).join('')}
                         </div>
-                        <div class="states-chart-wrapper">
-                            <div class="chart-title">Participação</div>
-                            <div class="chart-total">${filteredTotalVendas > 0 ? '100%' : '0%'}</div>
-                            <canvas id="chartPizzaEstados"></canvas>
+                        <div class="states-map-wrapper" style="position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; min-height: 250px;">
+                            <div id="brazil-map-container" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;"></div>
+                            <div id="map-tooltip" class="map-tooltip" style="display: none; position: absolute; background: var(--bg-elevated, #1e293b); backdrop-filter: blur(8px); border: 1px solid var(--border-color, rgba(255,255,255,0.1)); color: var(--text-primary, #f8fafc); padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; pointer-events: none; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: opacity 0.2s; top: 0; left: 0;">
+                                <div id="tooltip-uf" style="font-weight: 600; margin-bottom: 4px; color: var(--primary, #3b82f6);"></div>
+                                <div id="tooltip-value" style="font-weight: 500;"></div>
+                                <div id="tooltip-percent" style="color: var(--text-secondary, #94a3b8); font-size: 0.8rem; margin-top: 2px;"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -624,40 +628,94 @@ export const dashboardView = {
             });
         }
 
-        const ctxP = document.getElementById('chartPizzaEstados');
-        if (ctxP && states.length > 0) {
-            const activePlugins = [];
-            if (typeof ChartDataLabels !== 'undefined') activePlugins.push(ChartDataLabels);
-
-            this.charts.pizza = new Chart(ctxP, {
-                type: 'pie',
-                plugins: activePlugins,
-                data: {
-                    labels: states.map(d => d.uf),
-                    datasets: [{ data: states.map(d => d.total), backgroundColor: ['#10b981', '#f97316', '#3b82f6', '#ec4899', '#8b5cf6', '#eab308'], borderWidth: 3, borderColor: '#1e293b', offset: states.map((_, i) => i === 0 ? 20 : 0) }]
-                },
-                options: {
-                    ...config,
-                    layout: { padding: 10 },
-                    plugins: {
-                        legend: { display: false },
-                        datalabels: {
-                            color: '#ffffff',
-                            font: { weight: 'bold', size: 10 },
-                            formatter: (v, c) => { 
-                                const data = c.dataset.data || [];
-                                const t = data.reduce((a, b) => a + b, 0); 
-                                return t > 0 ? Math.round((v/t)*100)+'%' : ''; 
-                            },
-                            display: (c) => { 
-                                const data = c.dataset.data || [];
-                                const t = data.reduce((a, b) => a + b, 0); 
-                                return t > 0 && (c.dataset.data[c.dataIndex]/t)*100 > 8; 
-                            }
-                        }
-                    }
-                }
-            });
+        const mapContainer = document.getElementById('brazil-map-container');
+        if (mapContainer && typeof brazilMap !== 'undefined') {
+            this.initDashboardMap(mapContainer, states);
         }
-    }
+    },
+
+    initDashboardMap(container, statesData) {
+        // Find max total to calculate color intensity
+        const maxTotal = statesData.length > 0 ? Math.max(...statesData.map(s => s.total)) : 0;
+        
+        let svgHTML = `<svg viewBox="${brazilMap.viewBox}" style="width: 100%; max-height: 250px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">`;
+        
+        brazilMap.locations.forEach(loc => {
+            const stateId = loc.id.toUpperCase();
+            const stateInfo = statesData.find(s => s.uf === stateId);
+            
+            // Calculate fill color based on value
+            let fill = 'var(--bg-tertiary, #334155)'; // default neutral color
+            let cursor = 'default';
+            let stroke = 'var(--bg-secondary, #1e293b)';
+            
+            if (stateInfo && stateInfo.total > 0) {
+                // Determine color intensity (min 0.3 to keep it visible, max 1.0)
+                const intensity = maxTotal > 0 ? Math.max(0.3, stateInfo.total / maxTotal) : 0;
+                // Using primary color rgba(59, 130, 246, alpha) - Adjust to your brand
+                fill = `rgba(59, 130, 246, ${intensity})`;
+                cursor = 'pointer';
+                stroke = 'rgba(255,255,255,0.2)';
+            }
+
+            svgHTML += `
+                <path 
+                    d="${loc.path}" 
+                    id="map-state-${stateId}"
+                    data-uf="${stateId}"
+                    data-name="${loc.name}"
+                    data-total="${stateInfo ? stateInfo.total : 0}"
+                    data-percent="${stateInfo ? stateInfo.percent : 0}"
+                    fill="${fill}"
+                    stroke="${stroke}"
+                    stroke-width="1.5"
+                    style="transition: fill 0.3s ease; cursor: ${cursor};"
+                    class="map-state-path"
+                />
+            `;
+        });
+        
+        svgHTML += `</svg>`;
+        container.innerHTML = svgHTML;
+
+        // Add Tooltip Events
+        const tooltip = document.getElementById('map-tooltip');
+        const tooltipUf = document.getElementById('tooltip-uf');
+        const tooltipVal = document.getElementById('tooltip-value');
+        const tooltipPct = document.getElementById('tooltip-percent');
+        const wrapper = container.parentElement;
+
+        const paths = container.querySelectorAll('.map-state-path');
+        paths.forEach(path => {
+            const total = parseFloat(path.getAttribute('data-total'));
+            if (total === 0) return; // No tooltip for empty states
+
+            path.addEventListener('mouseenter', (e) => {
+                path.setAttribute('stroke', '#ffffff');
+                path.setAttribute('stroke-width', '2.5');
+                
+                tooltipUf.textContent = `${path.getAttribute('data-name')} (${path.getAttribute('data-uf')})`;
+                tooltipVal.textContent = 'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                tooltipPct.textContent = path.getAttribute('data-percent') + '% do total';
+                
+                tooltip.style.display = 'block';
+                tooltip.style.opacity = '1';
+            });
+
+            path.addEventListener('mousemove', (e) => {
+                const rect = wrapper.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                tooltip.style.left = (x + 15) + 'px';
+                tooltip.style.top = (y - 15) + 'px';
+            });
+
+            path.addEventListener('mouseleave', () => {
+                path.setAttribute('stroke', 'rgba(255,255,255,0.2)');
+                path.setAttribute('stroke-width', '1.5');
+                tooltip.style.opacity = '0';
+                tooltip.style.display = 'none';
+            });
+        });
 };

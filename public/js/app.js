@@ -8,6 +8,7 @@
 
 // Usa variáveis globais definidas em supabaseClient.js e offlineManager.js
 // (carregados antes no HTML)
+import brazilMap from './components/brazilMap.js';
 
 // ============================================
 // CONFIGURAÇÃO DA API
@@ -1006,18 +1007,23 @@ class App {
                 
                 // Filtrar por ano atual para vendas
                 if (year === currentYear) {
-                    // Vendas totais (todos os pedidos do ano)
                     monthlySales[month] += orderValue;
                     totalSales += orderValue;
                     
-                    // Vendas efetivadas = apenas pedidos com todas as parcelas pagas
-                    // (não considera mais automatico por tipo de pagamento)
+                    // Vendas efetivadas = soma das parcelas pagas
                     const detalhes = Array.isArray(order.parcelas_detalhes) ? order.parcelas_detalhes : [];
-                    const vendaEfetivada = detalhes.length > 0 
-                        ? detalhes.every(p => p.status === 'pago' || p.status === 'Pago')
-                        : (order.status_pagamento === 'pago' || order.status_pagamento === 'Pago');
-                    
-                    if (vendaEfetivada) {
+                    if (detalhes.length > 0) {
+                        let valorRecebido = 0;
+                        detalhes.forEach(p => {
+                            if ((p.status || '').toLowerCase() === 'pago') {
+                                valorRecebido += parseFloat(p.valor) || 0;
+                            }
+                        });
+                        if (valorRecebido > 0) {
+                            monthlySalesEffective[month] += valorRecebido;
+                            totalSalesEffective += valorRecebido;
+                        }
+                    } else if ((order.status_pagamento || '').toLowerCase() === 'pago') {
                         monthlySalesEffective[month] += orderValue;
                         totalSalesEffective += orderValue;
                     }
@@ -1096,8 +1102,6 @@ class App {
         
         const mesesComMovimentacao = monthlySales.filter(v => v > 0).length || 1;
         const mesesComMovimentacaoEfetiva = monthlySalesEffective.filter(v => v > 0).length || 1;
-        console.log('Dashboard final - totalSales:', totalSales, 'totalSalesEffective:', totalSalesEffective, 'months:', mesesComMovimentacao);
-        const avgSales = totalSalesEffective / mesesComMovimentacaoEfetiva;
         const avgCommission = totalCommission / mesesComMovimentacaoEfetiva;
         
         const topProducts = Object.entries(productSales)
@@ -1164,44 +1168,65 @@ return `
                     </div>
                     </div>
                     
-                    <!-- Grafico Pizza: Vendas por Estado -->
+                                        <!-- Mapa do Brasil: Vendas por Estado -->
                     <div class="card" style="padding: 20px;">
                         <div class="card-header" style="margin-bottom: 16px;">
                             <h3 class="card-title">Vendas por Estado</h3>
                         </div>
-                        ${topStates.length > 0 ? `
-                            <div style="display: flex; align-items: center; gap: 16px;">
-                                <div style="position: relative; width: 120px; height: 120px; flex-shrink: 0;">
-                                    <svg viewBox="0 0 42 42" style="width: 100%; height: 100%; transform: rotate(-90deg);">
-                                        ${(() => {
-                                            let cumulative = 0;
-                                            return topStates.map(([uf, data], i) => {
-                                                const pct = totalStateSales > 0 ? data.total / totalStateSales : 0;
-                                                const dash = pct * 100;
-                                                const gap = i === 0 ? 0 : 2;
-                                                const prev = cumulative;
-                                                cumulative += dash;
-                                                return `<circle cx="21" cy="21" r="15" fill="none" stroke="${cores[i]}" stroke-width="7" stroke-dasharray="${dash} ${100 - dash}" stroke-dashoffset="${-(prev)}" style="" />`;
-                                            }).join('');
-                                        })()}
-                                        <circle cx="21" cy="21" r="9" fill="var(--bg-primary)" />
-                                    </svg>
-                                </div>
-                                <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
-                                    ${topStates.map(([uf, data], i) => {
-                                        const pct = totalStateSales > 0 ? (data.total / totalStateSales * 100) : 0;
-                                        return `
-                                            <div style="display: flex; align-items: center; gap: 6px; font-size: 11px;">
-                                                <div style="width: 8px; height: 8px; border-radius: 2px; background: ${cores[i]}; flex-shrink: 0;"></div>
-                                                <span style="flex: 1;">${uf}</span>
-                                                <span style="font-weight: 600; color: var(--success);">${pct.toFixed(0)}%</span>
-                                            </div>
+                        <div class="states-map-wrapper" style="position: relative; width: 100%; display: flex; justify-content: center; align-items: center; min-height: 250px;">
+                            <div id="brazil-map-container" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
+                                ${(() => {
+                                    if(topStates.length === 0) return '<p style="color: var(--text-muted); text-align: center;">Nenhuma venda</p>';
+                                    
+                                    const maxTotal = topStates.length > 0 ? Math.max(...topStates.map(s => s[1].total)) : 0;
+                                    let svgHTML = `<svg viewBox="${brazilMap.viewBox}" style="width: 100%; max-height: 250px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">`;
+                                    
+                                    brazilMap.locations.forEach(loc => {
+                                        const stateId = loc.id.toUpperCase();
+                                        const stateInfo = topStates.find(s => s[0] === stateId);
+                                        
+                                        let fill = 'var(--bg-tertiary, #334155)';
+                                        let cursor = 'default';
+                                        let stroke = 'var(--bg-secondary, #1e293b)';
+                                        let total = 0;
+                                        let percent = 0;
+                                        
+                                        if (stateInfo && stateInfo[1].total > 0) {
+                                            total = stateInfo[1].total;
+                                            percent = totalStateSales > 0 ? (total / totalStateSales * 100).toFixed(1) : 0;
+                                            const intensity = maxTotal > 0 ? Math.max(0.3, total / maxTotal) : 0;
+                                            fill = `rgba(59, 130, 246, ${intensity})`;
+                                            cursor = 'pointer';
+                                            stroke = 'rgba(255,255,255,0.2)';
+                                        }
+
+                                        svgHTML += `
+                                            <path 
+                                                d="${loc.path}" 
+                                                id="map-state-${stateId}"
+                                                data-uf="${stateId}"
+                                                data-name="${loc.name}"
+                                                data-total="${total}"
+                                                data-percent="${percent}"
+                                                fill="${fill}"
+                                                stroke="${stroke}"
+                                                stroke-width="1.5"
+                                                style="transition: fill 0.3s ease; cursor: ${cursor};"
+                                                class="map-state-path"
+                                            />
                                         `;
-                                    }).join('')}
-                                </div>
+                                    });
+                                    svgHTML += `</svg>`;
+                                    return svgHTML;
+                                })()}
                             </div>
-                        ` : '<p style="color: var(--text-muted); text-align: center;">Nenhuma venda</p>'}
-</div>
+                            <div id="map-tooltip" class="map-tooltip" style="display: none; position: absolute; background: var(--bg-elevated, #1e293b); backdrop-filter: blur(8px); border: 1px solid var(--border-color, rgba(255,255,255,0.1)); color: var(--text-primary, #f8fafc); padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; pointer-events: none; ze-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: opacity 0.2s; top: 0; left: 0;">
+                                <div id="tooltip-uf" style="font-weight: 600; margin-bottom: 4px; color: var(--primary, #3b82f6);"></div>
+                                <div id="tooltip-value" style="font-weight: 500;"></div>
+                                <div id="tooltip-percent" style="color: var(--text-secondary, #94a3b8); font-size: 0.8rem; margin-top: 2px;"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
@@ -3283,7 +3308,7 @@ return `
         });
     }
 
-    setupDashboardView() {
+        setupDashboardView() {
         const list = document.getElementById('recent-orders-list');
         list?.addEventListener('click', (e) => {
             const item = e.target.closest('.list-item');
@@ -3293,6 +3318,50 @@ return `
                 if (order) this.showOrderModal(order);
             }
         });
+
+        // Eventos do mapa
+        const mapContainer = document.getElementById('brazil-map-container');
+        if (mapContainer) {
+            const tooltip = document.getElementById('map-tooltip');
+            const tooltipUf = document.getElementById('tooltip-uf');
+            const tooltipVal = document.getElementById('tooltip-value');
+            const tooltipPct = document.getElementById('tooltip-percent');
+            const wrapper = mapContainer.parentElement;
+
+            const paths = mapContainer.querySelectorAll('.map-state-path');
+            paths.forEach(path => {
+                const total = parseFloat(path.getAttribute('data-total'));
+                if (total === 0) return;
+
+                path.addEventListener('mouseenter', (e) => {
+                    path.setAttribute('stroke', '#ffffff');
+                    path.setAttribute('stroke-width', '2.5');
+                    
+                    tooltipUf.textContent = `${path.getAttribute('data-name')} (${path.getAttribute('data-uf')})`;
+                    tooltipVal.textContent = 'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                    tooltipPct.textContent = path.getAttribute('data-percent') + '% do total';
+                    
+                    tooltip.style.display = 'block';
+                    tooltip.style.opacity = '1';
+                });
+
+                path.addEventListener('mousemove', (e) => {
+                    const rect = wrapper.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    tooltip.style.left = (x + 15) + 'px';
+                    tooltip.style.top = (y - 15) + 'px';
+                });
+
+                path.addEventListener('mouseleave', () => {
+                    path.setAttribute('stroke', 'rgba(255,255,255,0.2)');
+                    path.setAttribute('stroke-width', '1.5');
+                    tooltip.style.opacity = '0';
+                    tooltip.style.display = 'none';
+                });
+            });
+        }
     }
 
     setupCropsView() {
