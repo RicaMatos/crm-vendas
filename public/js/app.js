@@ -1766,7 +1766,7 @@ return `
                         </div>
                         <div class="kpi-card-body">
                             <div class="value" id="card-toreceive-value">R$ ${totalComissaoAReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Dia 15 + 30</div>
+                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">Dia 15 + 30 (Parcelas pagas + parcelas pendentes)</div>
                         </div>
                     </div>
                     <div class="kpi-card" style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 6px; padding: 16px; border-left: 3px solid var(--success);">
