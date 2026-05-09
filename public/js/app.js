@@ -1179,25 +1179,29 @@ return `
                                     if(topStates.length === 0) return '<p style="color: var(--text-muted); text-align: center;">Nenhuma venda</p>';
                                     
                                     const maxTotal = topStates.length > 0 ? Math.max(...topStates.map(s => s[1].total)) : 0;
+                                    const colorPalette = [
+                                        '#e74c3c', '#e67e22', '#f1c40f', '#2ecc71',
+                                        '#1abc9c', '#3498db', '#9b59b6', '#34495e'
+                                    ];
                                     let svgHTML = `<svg viewBox="${brazilMap.viewBox}" style="width: 100%; max-height: 250px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">`;
                                     
                                     brazilMap.locations.forEach(loc => {
                                         const stateId = loc.id.toUpperCase();
                                         const stateInfo = topStates.find(s => s[0] === stateId);
+                                        const rankIndex = topStates.findIndex(s => s[0] === stateId);
                                         
                                         let fill = 'var(--bg-tertiary, #334155)';
                                         let cursor = 'default';
-                                        let stroke = 'var(--bg-secondary, #1e293b)';
+                                        let stroke = 'rgba(127, 127, 127, 0.5)';
+                                        let strokeWidth = 1.5;
                                         let total = 0;
                                         let percent = 0;
                                         
-                                        if (stateInfo && stateInfo[1].total > 0) {
+                                        if (stateInfo && stateInfo[1].total > 0 && rankIndex >= 0) {
                                             total = stateInfo[1].total;
                                             percent = totalStateSales > 0 ? (total / totalStateSales * 100).toFixed(1) : 0;
-                                            const intensity = maxTotal > 0 ? Math.max(0.3, total / maxTotal) : 0;
-                                            fill = `rgba(59, 130, 246, ${intensity})`;
+                                            fill = colorPalette[rankIndex % colorPalette.length];
                                             cursor = 'pointer';
-                                            stroke = 'rgba(255,255,255,0.2)';
                                         }
 
                                         svgHTML += `
@@ -1210,7 +1214,7 @@ return `
                                                 data-percent="${percent}"
                                                 fill="${fill}"
                                                 stroke="${stroke}"
-                                                stroke-width="1.5"
+                                                stroke-width="${strokeWidth || 1.5}"
                                                 style="transition: fill 0.3s ease; cursor: ${cursor};"
                                                 class="map-state-path"
                                             />
@@ -1220,7 +1224,7 @@ return `
                                     return svgHTML;
                                 })()}
                             </div>
-                            <div id="map-tooltip" class="map-tooltip" style="display: none; position: absolute; background: var(--bg-elevated, #1e293b); backdrop-filter: blur(8px); border: 1px solid var(--border-color, rgba(255,255,255,0.1)); color: var(--text-primary, #f8fafc); padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; pointer-events: none; ze-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: opacity 0.2s; top: 0; left: 0;">
+                            <div id="map-tooltip" class="map-tooltip" style="display: none; position: absolute; background: var(--bg-elevated, #1e293b); border: 1px solid var(--border-color, rgba(255,255,255,0.1)); color: var(--text-primary, #f8fafc); padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; pointer-events: none; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: opacity 0.2s; top: 0; left: 0;">
                                 <div id="tooltip-uf" style="font-weight: 600; margin-bottom: 4px; color: var(--primary, #3b82f6);"></div>
                                 <div id="tooltip-value" style="font-weight: 500;"></div>
                                 <div id="tooltip-percent" style="color: var(--text-secondary, #94a3b8); font-size: 0.8rem; margin-top: 2px;"></div>

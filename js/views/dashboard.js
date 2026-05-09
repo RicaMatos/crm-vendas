@@ -403,7 +403,7 @@ export const dashboardView = {
                         </div>
                         <div class="states-map-wrapper" style="position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; min-height: 250px;">
                             <div id="brazil-map-container" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;"></div>
-                            <div id="map-tooltip" class="map-tooltip" style="display: none; position: absolute; background: var(--bg-elevated, #1e293b); backdrop-filter: blur(8px); border: 1px solid var(--border-color, rgba(255,255,255,0.1)); color: var(--text-primary, #f8fafc); padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; pointer-events: none; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: opacity 0.2s; top: 0; left: 0;">
+                            <div id="map-tooltip" class="map-tooltip" style="display: none; position: absolute; background: var(--bg-elevated, #1e293b); border: 1px solid var(--border-color, rgba(255,255,255,0.1)); color: var(--text-primary, #f8fafc); padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; pointer-events: none; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: opacity 0.2s; top: 0; left: 0;">
                                 <div id="tooltip-uf" style="font-weight: 600; margin-bottom: 4px; color: var(--primary, #3b82f6);"></div>
                                 <div id="tooltip-value" style="font-weight: 500;"></div>
                                 <div id="tooltip-percent" style="color: var(--text-secondary, #94a3b8); font-size: 0.8rem; margin-top: 2px;"></div>
@@ -638,26 +638,36 @@ export const dashboardView = {
         // Find max total to calculate color intensity
         const maxTotal = statesData.length > 0 ? Math.max(...statesData.map(s => s.total)) : 0;
         
+        // Color palette for states (ordered by rank)
+        const colorPalette = [
+            '#e74c3c', // vermelho
+            '#e67e22', // laranja
+            '#f1c40f', // amarelo
+            '#2ecc71', // verde
+            '#1abc9c', // verde-azulado
+            '#3498db', // azul
+            '#9b59b6', // roxo
+            '#34495e'  // cinza escuro
+        ];
+        
         let svgHTML = `<svg viewBox="${brazilMap.viewBox}" style="width: 100%; max-height: 250px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">`;
         
         brazilMap.locations.forEach(loc => {
             const stateId = loc.id.toUpperCase();
             const stateInfo = statesData.find(s => s.uf === stateId);
+            const rankIndex = statesData.findIndex(s => s.uf === stateId);
             
-            // Calculate fill color based on value
+            // Calculate fill color based on rank
             let fill = 'var(--bg-tertiary, #334155)'; // default neutral color
             let cursor = 'default';
-            let stroke = 'var(--bg-secondary, #1e293b)';
+            let stroke = 'rgba(127, 127, 127, 0.5)';
+            let strokeWidth = 1.5;
             
-            if (stateInfo && stateInfo.total > 0) {
-                // Determine color intensity (min 0.3 to keep it visible, max 1.0)
-                const intensity = maxTotal > 0 ? Math.max(0.3, stateInfo.total / maxTotal) : 0;
-                // Using primary color rgba(59, 130, 246, alpha) - Adjust to your brand
-                fill = `rgba(59, 130, 246, ${intensity})`;
+            if (stateInfo && stateInfo.total > 0 && rankIndex >= 0) {
+                fill = colorPalette[rankIndex % colorPalette.length];
                 cursor = 'pointer';
-                stroke = 'rgba(255,255,255,0.2)';
             }
-
+            
             svgHTML += `
                 <path 
                     d="${loc.path}" 
@@ -668,7 +678,7 @@ export const dashboardView = {
                     data-percent="${stateInfo ? stateInfo.percent : 0}"
                     fill="${fill}"
                     stroke="${stroke}"
-                    stroke-width="1.5"
+                    stroke-width="${strokeWidth}"
                     style="transition: fill 0.3s ease; cursor: ${cursor};"
                     class="map-state-path"
                 />
