@@ -92,10 +92,63 @@
 - RLS: ✅ Ativo em todas as tabelas
 - Políticas: 24 (4 por tabela)
 
-### Problema Identificado ⚠️
-- **Erro:** "net::ERR_NAME_NOT_RESOLVED" -域名 errado
-- **Causa:** domínio Supabase digitado incorretamente (tinha "zgtkbnzmun" em vez de "zgtakbznmux")
-- **Solução:** Domínio corrigido no código
+### Edge Functions ✅ (Deploy Pendente)
+- ✅ Código pronto em `supabase/functions/`
+- ✅ 4 funções: check-parcelas, check-tarefas, check-aniversarios, check-followup
+- ⚠️ Deploy não realizado (precisa CLI ou Dashboard manual)
+
+### Notificações Automáticas ⚠️ (Pendente)
+- ⚠️ Tabela `notifications` NÃO existe no banco
+- ⚠️ Cron jobs NÃO configurados
+- 📋 Ação necessária: Executar SQL no Supabase Dashboard
+
+## Setup Pendente - Execute Manualmente
+
+### Passo 1: Criar Tabela Notifications
+1. Acesse: https://supabase.com/dashboard/project/zgtakbznmuxkibxybdky/sql/new
+2. Cole o conteúdo de `supabase/migrations/create_notifications_table.sql`
+3. Clique "Run"
+
+### Passo 2: Deploy Edge Functions
+1. Acesse: https://supabase.com/dashboard/project/zgtakbznmuxkibxybdky/functions
+2. Clique "New Function" para cada uma:
+   - `check-parcelas` → cole código de `supabase/functions/check-parcelas/index.ts`
+   - `check-tarefas` → cole código de `supabase/functions/check-tarefas/index.ts`
+   - `check-aniversarios` → cole código de `supabase/functions/check-aniversarios/index.ts`
+   - `check-followup` → cole código de `supabase/functions/check-followup/index.ts`
+3. Em cada função: Settings → Environment Variables → adicione:
+   ```
+   SUPABASE_URL=https://zgtakbznmuxkibxybdky.supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njg1NjA4MiwiZXhwIjoyMDkyNDMyMDgyfQ.rWIaVXkp8pssrrgIll_u80ezO3RFeGPz2fc514mDZCA
+   ```
+
+### Passo 3: Configurar Cron (pg_cron)
+No SQL Editor do Supabase, execute:
+```sql
+SELECT cron.schedule('check-parcelas-cron', '0 * * * *',
+    $$ SELECT net.http_post(
+        url:='https://zgtakbznmuxkibxybdky.supabase.co/functions/v1/check-parcelas',
+        headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njg1NjA4MiwiZXhwIjoyMDkyNDMyMDgyfQ.rWIaVXkp8pssrrgIll_u80ezO3RFeGPz2fc514mDZCA"}'::jsonb
+    ) AS result; $$);
+
+SELECT cron.schedule('check-tarefas-cron', '0 * * * *',
+    $$ SELECT net.http_post(
+        url:='https://zgtakbznmuxkibxybdky.supabase.co/functions/v1/check-tarefas',
+        headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njg1NjA4MiwiZXhwIjoyMDkyNDMyMDgyfQ.rWIaVXkp8pssrrgIll_u80ezO3RFeGPz2fc514mDZCA"}'::jsonb
+    ) AS result; $$);
+
+SELECT cron.schedule('check-aniversarios-cron', '0 9 * * *',
+    $$ SELECT net.http_post(
+        url:='https://zgtakbznmuxkibxybdky.supabase.co/functions/v1/check-aniversarios',
+        headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njg1NjA4MiwiZXhwIjoyMDkyNDMyMDgyfQ.rWIaVXkp8pssrrgIll_u80ezO3RFeGPz2fc514mDZCA"}'::jsonb
+    ) AS result; $$);
+
+SELECT cron.schedule('check-followup-cron', '0 10 * * *',
+    $$ SELECT net.http_post(
+        url:='https://zgtakbznmuxkibxybdky.supabase.co/functions/v1/check-followup',
+        headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njg1NjA4MiwiZXhwIjoyMDkyNDMyMDgyfQ.rWIaVXkp8pssrrgIll_u80ezO3RFeGPz2fc514mDZCA"}'::jsonb
+    ) AS result; $$);
+```
 
 ### Variáveis de Ambiente (Vercel)
 Necessário configurar no Vercel Dashboard:
