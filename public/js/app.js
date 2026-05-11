@@ -18,6 +18,25 @@ const API_BASE = '/api';
 const API_TIMEOUT = 5000;
 
 // ============================================
+// SEGURANÇA - SANITIZAÇÃO XSS
+// ============================================
+
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+
+function escapeAttr(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/["'&<>]/g, (char) => {
+        const entities = { '&': '&amp;', '"': '&quot;', "'": '&#39;', '<': '&lt;', '>': '&gt;' };
+        return entities[char] || char;
+    });
+}
+
+// ============================================
 // VALIDAÇÕES DE CPF/CNPJ
 // ============================================
 
@@ -763,8 +782,8 @@ class App {
                 
                 if (data.success) {
                     resetUserId = data.userId;
-                    ui.showToast(`Token: ${data.resetToken} (${data.expiresIn}s)`, 'success');
-                    showTokenInput(data.resetToken, data.expiresIn);
+                    ui.showToast(`Token enviado! Verifique seu email. (Expira em ${data.expiresIn}s)`, 'success');
+                    showTokenInput('', data.expiresIn);
                     forgotForm?.classList.add('hidden');
                     document.getElementById('reset-password-form')?.classList.remove('hidden');
                 } else {
@@ -1247,7 +1266,7 @@ return `
                                             <div style="width: 6px; height: 6px; border-radius: 50%; background: ${cores[index]};"></div>
                                             <div style="flex: 1; font-size: 12px;">
                                                 <div style="display: flex; justify-content: space-between;">
-                                                    <span>${data.name}</span>
+                                                    <span>${escapeHtml(data.name)}</span>
                                                     <span style="font-weight: 600;">${data.quantidade} ${data.unidade}</span>
                                                 </div>
                                                 <div style="height: 3px; background: var(--bg-tertiary); border-radius: 2px; margin-top: 2px;">

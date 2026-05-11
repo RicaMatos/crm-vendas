@@ -30,12 +30,15 @@ const PORT = process.env.PORT || process.env.VERCEL_PORT || 3000;
 // MIDDLEWARE
 // ============================================
 
-// CORS - Permite requisições do frontend
-app.use(cors({
-    origin: '*',
+// CORS - Configuração segura
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean);
+const corsOptions = {
+    origin: allowedOrigins.length > 0 ? allowedOrigins : false,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+};
+app.use(cors(corsOptions));
 
 // Parser JSON
 app.use(express.json({ limit: '10mb' }));
@@ -103,8 +106,11 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// Debug - variáveis de ambiente
+// Debug - variáveis de ambiente (apenas em desenvolvimento)
 app.get('/api/debug', (req, res) => {
+    if (process.env.NODE_ENV === 'production') {
+        return res.status(404).json({ success: false, message: 'Rota não encontrada' });
+    }
     res.json({
         supabaseUrl: process.env.SUPABASE_URL ? '✅ Configurado' : '❌ Não configurado',
         supabaseAnonKey: process.env.SUPABASE_ANON_KEY ? '✅ Configurado' : '❌ Não configurado',

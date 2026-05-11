@@ -111,8 +111,11 @@ function initializeDB() {
 }
 
 function seedData() {
-    const adminPass = bcrypt.hashSync('admin123', 10);
-    const vendedorPass = bcrypt.hashSync('vendedor123', 10);
+    const generatePassword = () => Math.random().toString(36).slice(-8) + Math.floor(Math.random() * 1000);
+    const adminPass = bcrypt.hashSync(generatePassword(), 10);
+    const vendedorPass = bcrypt.hashSync(generatePassword(), 10);
+
+    console.log('[database] Senhas geradas para seed (guarde-as se necessário)');
 
     db.run(`INSERT INTO users (nome, email, senha, nivel) VALUES 
         ('Administrador', 'admin@crm.com', ?, 'Admin'),

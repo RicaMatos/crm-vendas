@@ -6,8 +6,12 @@
  * Suporta modo offline com cache local.
  */
 
-const SUPABASE_URL = window.ENV?.SUPABASE_URL || 'https://zgtakbznmuxkibxybdky.supabase.co';
-const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOilzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NTYwODIsImV4cCI6MjA5MjQzMjA4Mn0.oifEbE6EflNcBdKk_AmYbHm0g5y1Q5MNfrn89UkkiDQ';
+const SUPABASE_URL = window.ENV?.SUPABASE_URL;
+const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error('[SupabaseClient] ERRO: Configure SUPABASE_URL e SUPABASE_ANON_KEY no objeto window.ENV');
+}
 
 // Tentará o backend primeiro, se falhar usa API direta do Supabase
 let API_BASE = '/api';

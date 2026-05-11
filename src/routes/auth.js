@@ -10,7 +10,13 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { supabase, supabaseAnon } = require('../config/supabaseClient');
 const { authenticate } = require('../middleware/authenticate');
-const JWT_SECRET = process.env.JWT_SECRET || 'crm_vendas_2026_chave_jwt_producao_segura_aleatoria';
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+    console.error('[auth] ERRO: Variável de ambiente JWT_SECRET é obrigatória');
+    process.exit(1);
+}
 
 /**
  * Registra um novo usuário
@@ -295,7 +301,7 @@ router.get('/verify', async (req, res) => {
 
         const token = authHeader.split(' ')[1];
 
-        // Verifica apenas o token JWT local
+        // Verifica o token JWT local
         let decoded;
         try {
             decoded = jwt.verify(token, JWT_SECRET);
@@ -307,7 +313,25 @@ router.get('/verify', async (req, res) => {
             });
         }
 
-        // Retorna sucesso apenas com verificação JWT
+        // Valida existência do usuário no Supabase
+        try {
+            const { data: userData, error: userError } = await supabase.auth.getUser(decoded.sub);
+            if (userError || !userData.user) {
+                return res.status(401).json({
+                    success: false,
+                    valid: false,
+                    message: 'Usuário não encontrado ou sessão expirada'
+                });
+            }
+        } catch (supabaseErr) {
+            console.warn('[auth] Erro ao validar usuário no Supabase:', supabaseErr);
+            return res.status(401).json({
+                success: false,
+                valid: false,
+                message: 'Erro ao validar sessão'
+            });
+        }
+
         res.json({
             success: true,
             valid: true,
@@ -336,6 +360,16 @@ router.get('/verify', async (req, res) => {
  * Body: { email }
  */
 const resetTokens = new Map();
+
+// Cleanup automático de tokens expirados (a cada 60 segundos)
+setInterval(() => {
+    const now = Date.now();
+    for (const [email, data] of resetTokens) {
+        if (data.expiresAt < now) {
+            resetTokens.delete(email);
+        }
+    }
+}, 60000);
 
 router.post('/reset-password', async (req, res) => {
     try {
@@ -373,17 +407,9 @@ router.post('/reset-password', async (req, res) => {
             expiresAt
         });
 
-        // Limpar tokens expirados
-        for (const [key, value] of resetTokens) {
-            if (value.expiresAt < Date.now()) {
-                resetTokens.delete(key);
-            }
-        }
-
         res.json({ 
             success: true, 
             message: 'Token gerado. Você tem 35 segundos.',
-            resetToken: resetToken,
             userId: user.id,
             expiresIn: 35
         });

@@ -8,7 +8,12 @@
 
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'crm_vendas_2026_chave_jwt_producao_segura_aleatoria';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+    console.error('[authenticate] ERRO: Variável de ambiente JWT_SECRET é obrigatória');
+    process.exit(1);
+}
 
 // Extrai o token JWT do header Authorization
 /**
