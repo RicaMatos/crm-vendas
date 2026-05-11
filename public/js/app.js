@@ -597,6 +597,130 @@ class App {
         document.getElementById('fab')?.addEventListener('click', () => {
             this.handleFabClick();
         });
+
+        // Notificações
+        this.setupNotifications();
+    }
+
+    async setupNotifications() {
+        const notifBtn = document.getElementById('notifications-btn');
+        const notifDropdown = document.getElementById('notifications-dropdown');
+        const notifList = document.getElementById('notifications-list');
+        const markAllReadBtn = document.getElementById('mark-all-read');
+
+        if (!notifBtn || !notifDropdown) return;
+
+        // Toggle dropdown
+        notifBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            notifDropdown.classList.toggle('hidden');
+            if (!notifDropdown.classList.contains('hidden')) {
+                await this.loadNotifications();
+            }
+        });
+
+        // Fechar ao clicar fora
+        document.addEventListener('click', (e) => {
+            if (!notifDropdown.contains(e.target) && e.target !== notifBtn) {
+                notifDropdown.classList.add('hidden');
+            }
+        });
+
+        // Marcar todas como lida
+        markAllReadBtn?.addEventListener('click', async () => {
+            await this.markAllNotificationsRead();
+        });
+
+        // Carregar ao iniciar
+        this.loadNotifications();
+    }
+
+    async loadNotifications() {
+        const token = localStorage.getItem('CRM_TOKEN') || sessionStorage.getItem('CRM_TOKEN');
+        const notifList = document.getElementById('notifications-list');
+        const badge = document.getElementById('notifications-badge');
+
+        if (!token) return;
+
+        try {
+            const response = await fetchWithTimeout(`${API_BASE}/notifications?nao_lidas=true`, {
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+            });
+
+            if (!response.ok) throw new Error('Erro ao buscar');
+
+            const data = await response.json();
+            const notifications = data.data || [];
+
+            // Atualizar badge
+            if (notifications.length > 0) {
+                badge.textContent = notifications.length > 9 ? '9+' : notifications.length;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+
+            // Renderizar lista
+            if (notifications.length === 0) {
+                notifList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px;">Nenhuma notificação</div>';
+            } else {
+                notifList.innerHTML = notifications.map(n => `
+                    <div class="notif-item" data-id="${n.id}" style="padding: 12px; border-radius: 8px; margin-bottom: 4px; cursor: pointer; background: ${n.lida ? 'transparent' : 'var(--bg-tertiary)'}; transition: background 0.2s;" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='${n.lida ? 'transparent' : 'var(--bg-tertiary)'}'">
+                        <div style="font-size: 12px; font-weight: 600; margin-bottom: 4px;">${escapeHtml(n.titulo)}</div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">${escapeHtml(n.mensagem)}</div>
+                        <div style="font-size: 10px; color: var(--text-muted); margin-top: 6px;">${this.formatRelativeTime(n.created_at)}</div>
+                    </div>
+                `).join('');
+
+                // Adicionar click para marcar como lida
+                notifList.querySelectorAll('.notif-item').forEach(item => {
+                    item.addEventListener('click', async () => {
+                        const id = item.dataset.id;
+                        await this.markNotificationRead(id);
+                    });
+                });
+            }
+        } catch (err) {
+            console.error('Erro notificações:', err);
+            notifList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger); font-size: 13px;">Erro ao carregar</div>';
+        }
+    }
+
+    async markNotificationRead(id) {
+        const token = localStorage.getItem('CRM_TOKEN') || sessionStorage.getItem('CRM_TOKEN');
+        try {
+            await fetchWithTimeout(`${API_BASE}/notifications/${id}/ler`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+            });
+            await this.loadNotifications();
+        } catch (err) {
+            console.error('Erro ao marcar:', err);
+        }
+    }
+
+    async markAllNotificationsRead() {
+        const token = localStorage.getItem('CRM_TOKEN') || sessionStorage.getItem('CRM_TOKEN');
+        try {
+            await fetchWithTimeout(`${API_BASE}/notifications/ler-todas`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+            });
+            await this.loadNotifications();
+            ui.showToast('Todas marcadas como lidas', 'success');
+        } catch (err) {
+            console.error('Erro ao marcar todas:', err);
+        }
+    }
+
+    formatRelativeTime(dateStr) {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diff = Math.floor((now - date) / 1000 / 60);
+        if (diff < 1) return 'Agora';
+        if (diff < 60) return `${diff} min`;
+        if (diff < 1440) return `${Math.floor(diff / 60)}h`;
+        return `${Math.floor(diff / 1440)}d`;
     }
 
     setupAuthForms() {
