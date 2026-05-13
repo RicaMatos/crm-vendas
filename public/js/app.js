@@ -603,7 +603,6 @@ class App {
     }
 
     async setupNotifications() {
-        const notifBtn = document.getElementById('notifications-btn');
         const notifBtnSidebar = document.getElementById('notifications-btn-sidebar');
         const notifDropdown = document.getElementById('notifications-dropdown');
         const notifList = document.getElementById('notifications-list');
@@ -619,19 +618,14 @@ class App {
             }
         };
 
-        // Botão do header (mobile)
-        if (notifBtn) {
-            notifBtn.addEventListener('click', handleNotifClick);
-        }
-
         // Botão da sidebar (desktop)
         if (notifBtnSidebar) {
             notifBtnSidebar.addEventListener('click', handleNotifClick);
         }
 
-        // Fechar ao clicar fora (para ambos os botões)
+        // Fechar ao clicar fora
         document.addEventListener('click', (e) => {
-            const isNotifBtn = (notifBtn && notifBtn.contains(e.target)) || (notifBtnSidebar && notifBtnSidebar.contains(e.target));
+            const isNotifBtn = notifBtnSidebar && notifBtnSidebar.contains(e.target);
             if (!notifDropdown.contains(e.target) && !isNotifBtn) {
                 notifDropdown.classList.add('hidden');
             }
@@ -649,7 +643,6 @@ class App {
     async loadNotifications() {
         const token = localStorage.getItem('CRM_TOKEN') || sessionStorage.getItem('CRM_TOKEN');
         const notifList = document.getElementById('notifications-list');
-        const badge = document.getElementById('notifications-badge');
         const badgeSidebar = document.getElementById('notifications-badge-sidebar');
 
         if (!token) return;
@@ -663,16 +656,6 @@ class App {
 
             const data = await response.json();
             const notifications = data.data || [];
-
-            // Atualizar badge do header (mobile)
-            if (badge) {
-                if (notifications.length > 0) {
-                    badge.textContent = notifications.length > 9 ? '9+' : notifications.length;
-                    badge.style.display = 'flex';
-                } else {
-                    badge.style.display = 'none';
-                }
-            }
 
             // Atualizar badge da sidebar (desktop)
             if (badgeSidebar) {
