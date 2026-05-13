@@ -3,25 +3,10 @@ name: Deploy
 on:
   push:
     branches: [main]
-    paths:
-      - 'public/**'
-      - 'js/**'
-      - 'css/**'
-      - 'vercel.json'
-      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 jobs:
-  deploy-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy Frontend to Vercel
-        run: |
-          echo "Vercel deploy triggered automatically when connected"
-          echo "Connect repo at vercel.com to enable auto-deploy"
-
-  deploy-backend:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

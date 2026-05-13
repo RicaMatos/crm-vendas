@@ -11,6 +11,10 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
+const securityMiddleware = require('./src/middleware/security');
+const { generalLimiter, authLimiter } = require('./src/middleware/rateLimiter');
+const { securityLogger } = require('./src/middleware/securityLogger');
+
 // Importa rotas do Supabase
 const authRoutes = require('./src/routes/auth');
 const customersRoutes = require('./src/routes/customers');
@@ -25,11 +29,15 @@ const importRoutes = require('./src/routes/import');
 const notificationsRoutes = require('./src/routes/notifications');
 
 const app = express();
-const PORT = process.env.PORT || process.env.VERCEL_PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
 // ============================================
 // MIDDLEWARE
 // ============================================
+
+app.use(securityMiddleware);
+app.use(securityLogger);
+app.use(generalLimiter);
 
 // CORS - Configuração segura
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean);
@@ -63,8 +71,8 @@ app.use((req, res, next) => {
 // ROTAS DA API
 // ============================================
 
-// Autenticação
-app.use('/api/auth', authRoutes);
+// Autenticação - com rate limiting específico
+app.use('/api/auth', authLimiter, authRoutes);
 
 // CRUD de clientes
 app.use('/api/customers', customersRoutes);

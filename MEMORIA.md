@@ -169,31 +169,24 @@ Necessário configurar no Vercel Dashboard:
 - ✅ RLS no Supabase (segurança)
 - ✅ Gráfico de Pagamento de Comissões (barras quinzenais)
 
-## Deploy - Vercel (Recomendado)
+## Deploy - Render (Recomendado)
 
-### 1. Criar arquivo `vercel.json` na raiz do projeto:
+O CRM Vendas utiliza o **Render** para deploy do backend e frontend.
 
-```json
-{
-  "version": 2,
-  "builds": [
-    { "src": "server.js", "use": "@vercel/node" }
-  ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/server.js" },
-    { "src": "/(.*)", "dest": "/server.js" }
-  ]
-}
-```
+### Render.com - Configuração
 
-### 2. Variáveis de Ambiente (OBRIGATÓRIAS - adicionar no Vercel):
+1. Criar conta em render.com
+2. Criar novo Web Service (backend) e Static Site (frontend)
+3. Adicionar variáveis de ambiente:
 
 | Variável | Valor |
 |---------|-------|
 | SUPABASE_URL | https://zgtakbznmuxkibxybdky.supabase.co |
-| SUPABASE_ANON_KEY | eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOilzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NTYwODIsImV4cCI6MjA5MjQzMjA4Mn0.oifEbE6EflNcBdKk_AmYbHm0g5y1Q5MNfrn89UkkiDQ |
-| SUPABASE_SERVICE_ROLE_KEY | eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOilzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njg1NjA4MiwiZXhwIjoyMDkyNDMyMDgyfQ.rWIaVXkp8pssrrgIll_u80ezO3RFeGPz2fc514mDZCA |
+| SUPABASE_ANON_KEY | (obter no Supabase Dashboard) |
+| SUPABASE_SERVICE_ROLE_KEY | (obter no Supabase Dashboard) |
 | JWT_SECRET | crm_vendas_2026_chave_jwt_producao_segura_aleatoria |
+| NODE_ENV | production |
+| PORT | 3000 |
 
 ⚠️ IMPORTANTE: O domínio correto é **zgtakbznmuxkibxybdky** (não zgtkbnzmun!)
 
@@ -216,26 +209,14 @@ Necessário configurar no Vercel Dashboard:
    git push -u origin main
    ```
 
-**Passo 2 - Vercel:**
-1. Acessar vercel.com
-2. Clicar "Add New" → "Project"
-3. Importar repositório "crm-vendas"
-4. Em "Environment Variables", adicionar:
-
-| Nome | Valor |
-|------|-------|
-| SUPABASE_URL | https://zgtakbznmuxkibxybdky.supabase.co |
-| SUPABASE_ANON_KEY | eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOilzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NTYwODIsImV4cCI6MjA5MjQzMjA4Mn0.oifEbE6EflNcBdKk_AmYbHm0g5y1Q5MNfrn89UkkiDQ |
-| SUPABASE_SERVICE_ROLE_KEY | eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOilzdXBhYmFzZSIsInJlZiI6InpndGFrYnpubXV4a2lieHliZGt5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njg1NjA4MiwiZXhwIjoyMDkyNDMyMDgyfQ.rWIaVXkp8pssrrgIll_u80ezO3RFeGPz2fc514mDZCA |
-| JWT_SECRET | crm_vendas_2026_chave_jwt_producao_segura_aleatoria |
-
-5. Clicar "Deploy"
-6. Aguardar ~1 minuto
-7. Copiar o link fornecido (ex: https://crm-vendas.vercel.app)
+**Passo 2 - Render:**
+1. Acessar render.com
+2. Criar Web Service conectando ao repositório GitHub
+3. Configurar variáveis de ambiente no painel do Render
+4. O deploy será automático a cada push (via GitHub Actions)
 
 **Atualizações futuras:**
-- Após修改 no código, basta fazer git push会自动触发 deploy
--Para alterações manuais: Vercel → Project → Settings → Environment Variables## Scripts de Deploy
+- Após modificações no código, basta fazer `git push` que o deploy será acionado automaticamente## Scripts de Deploy
 | Arquivo | Descricao | Plataforma |
 |--------|-----------|------------|
 | deploy.sh | Script bash executavel para deploy automatico | Linux/macOS/WSL |

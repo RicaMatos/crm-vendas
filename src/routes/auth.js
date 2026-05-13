@@ -12,6 +12,7 @@ const { supabase, supabaseAnon } = require('../config/supabaseClient');
 const { authenticate } = require('../middleware/authenticate');
 
 const JWT_SECRET = process.env.JWT_SECRET;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@crm.com';
 
 if (!JWT_SECRET) {
     console.error('[auth] ERRO: Variável de ambiente JWT_SECRET é obrigatória');
@@ -128,7 +129,7 @@ router.post('/login', async (req, res) => {
         }
 
         const nome = authData.user.user_metadata?.nome || '';
-        const isPrimeiroAdmin = authData.user.email?.toLowerCase() === 'admin@crm.com';
+        const isPrimeiroAdmin = authData.user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
         const nivel = isPrimeiroAdmin ? 'Admin' : (authData.user.user_metadata?.nivel || 'Vendedor');
 
         const token = jwt.sign(

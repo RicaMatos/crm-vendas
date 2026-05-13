@@ -49,12 +49,12 @@ else
     echo -e "${AMARELO}⚠️ Build não configurado, pulando...${SEM_COR}"
 fi
 
-# Deploy Vercel
+# Deploy Render
 echo ""
-echo "🚀 Iniciando deploy no Vercel..."
-npx vercel --prod
+echo "🚀 Iniciando deploy no Render..."
+echo "Use o painel do Render ou webhook para fazer deploy"
 
 echo ""
 echo "=========================================="
-echo -e "${VERDE}✅ Deploy concluído!${SEM_COR}"
+echo -e "${VERDE}✅ Script finalizado!${SEM_COR}"
 echo "=========================================="
