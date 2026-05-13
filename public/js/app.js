@@ -604,24 +604,35 @@ class App {
 
     async setupNotifications() {
         const notifBtn = document.getElementById('notifications-btn');
+        const notifBtnSidebar = document.getElementById('notifications-btn-sidebar');
         const notifDropdown = document.getElementById('notifications-dropdown');
         const notifList = document.getElementById('notifications-list');
         const markAllReadBtn = document.getElementById('mark-all-read');
 
-        if (!notifBtn || !notifDropdown) return;
+        if (!notifDropdown) return;
 
-        // Toggle dropdown
-        notifBtn.addEventListener('click', async (e) => {
+        const handleNotifClick = async (e) => {
             e.stopPropagation();
             notifDropdown.classList.toggle('hidden');
             if (!notifDropdown.classList.contains('hidden')) {
                 await this.loadNotifications();
             }
-        });
+        };
 
-        // Fechar ao clicar fora
+        // Botão do header (mobile)
+        if (notifBtn) {
+            notifBtn.addEventListener('click', handleNotifClick);
+        }
+
+        // Botão da sidebar (desktop)
+        if (notifBtnSidebar) {
+            notifBtnSidebar.addEventListener('click', handleNotifClick);
+        }
+
+        // Fechar ao clicar fora (para ambos os botões)
         document.addEventListener('click', (e) => {
-            if (!notifDropdown.contains(e.target) && e.target !== notifBtn) {
+            const isNotifBtn = (notifBtn && notifBtn.contains(e.target)) || (notifBtnSidebar && notifBtnSidebar.contains(e.target));
+            if (!notifDropdown.contains(e.target) && !isNotifBtn) {
                 notifDropdown.classList.add('hidden');
             }
         });
@@ -639,6 +650,7 @@ class App {
         const token = localStorage.getItem('CRM_TOKEN') || sessionStorage.getItem('CRM_TOKEN');
         const notifList = document.getElementById('notifications-list');
         const badge = document.getElementById('notifications-badge');
+        const badgeSidebar = document.getElementById('notifications-badge-sidebar');
 
         if (!token) return;
 
@@ -652,12 +664,24 @@ class App {
             const data = await response.json();
             const notifications = data.data || [];
 
-            // Atualizar badge
-            if (notifications.length > 0) {
-                badge.textContent = notifications.length > 9 ? '9+' : notifications.length;
-                badge.style.display = 'flex';
-            } else {
-                badge.style.display = 'none';
+            // Atualizar badge do header (mobile)
+            if (badge) {
+                if (notifications.length > 0) {
+                    badge.textContent = notifications.length > 9 ? '9+' : notifications.length;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+
+            // Atualizar badge da sidebar (desktop)
+            if (badgeSidebar) {
+                if (notifications.length > 0) {
+                    badgeSidebar.textContent = notifications.length > 9 ? '9+' : notifications.length;
+                    badgeSidebar.style.display = 'flex';
+                } else {
+                    badgeSidebar.style.display = 'none';
+                }
             }
 
             // Renderizar lista
